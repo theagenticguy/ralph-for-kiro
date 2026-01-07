@@ -1,0 +1,34 @@
+[project]
+name = "ralph-wiggum"
+version = "0.3.2"
+description = "Ralph Wiggum iterative loop technique for Kiro CLI"
+readme = "README.md"
+authors = [
+    { name = "laithalsaadoon", email = "alsaadoonlaith@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "cyclopts>=3.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.scripts]
+ralph = "ralph_wiggum.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ralph_wiggum"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/ralph_wiggum/data" = "ralph_wiggum/data"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
