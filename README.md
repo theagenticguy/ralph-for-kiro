@@ -2,6 +2,18 @@
 
 Implementation of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) for iterative, self-referential AI development loops in Kiro CLI.
 
+> ⚠️ **IMPORTANT: Human Oversight Required**
+>
+> This tool runs Kiro CLI in a fully autonomous loop using `--no-interactive` and `--trust-all-tools` flags via subprocess. This means:
+>
+> - **The AI agent can execute ANY tool without confirmation** (file writes, shell commands, etc.)
+> - **No human approval is required** between iterations
+> - **The loop runs until completion or max iterations** - potentially for hours
+>
+> **You MUST monitor and review all output.** Do not leave Ralph running unattended on production systems or sensitive codebases. Always use `--max-iterations` to set a reasonable limit.
+>
+> **Requires:** Latest version of [Kiro CLI](https://kiro.dev/) installed and authenticated.
+
 ## What is Ralph Wiggum?
 
 Ralph Wiggum is a development methodology based on continuous AI agent loops. As Geoffrey Huntley describes it: **"Ralph is a Bash loop"** - a simple `while true` that repeatedly feeds an AI agent a prompt, allowing it to iteratively improve its work until completion.
@@ -322,6 +334,28 @@ your-project/
 - [uv](https://docs.astral.sh/uv/)
 - [mise](https://mise.jdx.dev/) (optional, for task running)
 - [Kiro CLI](https://kiro.dev/) installed and authenticated
+
+### Recommended Kiro CLI Settings
+
+For optimal Ralph Wiggum usage, configure your Kiro CLI settings in `~/.kiro/settings/cli.json`:
+
+```json
+{
+  "chat.defaultModel": "claude-opus-4.5",
+  "chat.greeting.enabled": false,
+  "mcp.loadedBefore": true,
+  "mcp.noInteractiveTimeout": 30000,
+  "mcp.initTimeout": 30000,
+  "chat.enableTodoList": true,
+  "chat.enableDelegate": true,
+  "chat.enableCheckpoint": true,
+  "chat.enableThinking": true,
+  "chat.enableContextUsageIndicator": true,
+  "chat.enableKnowledge": true,
+  "chat.enableTangentMode": true,
+  "introspec.tangentMode": true
+}
+```
 
 ### Setup
 
