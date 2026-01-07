@@ -1,0 +1,46 @@
+[settings]
+python.uv_venv_auto = true
+
+[tools]
+python = "3.13"
+uv = "latest"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest"
+
+[tasks."test:parallel"]
+description = "Run tests in parallel with xdist"
+run = "uv run pytest -n auto"
+
+[tasks."test:cov"]
+description = "Run tests with coverage"
+run = "uv run pytest --cov=ralph_wiggum --cov-report=term-missing"
+
+[tasks."test:watch"]
+description = "Run tests in watch mode (requires pytest-watch)"
+run = "uv run ptw"
+
+[tasks.lint]
+description = "Run linter"
+run = "uv run ruff check ."
+
+[tasks."lint:fix"]
+description = "Run linter with auto-fix"
+run = "uv run ruff check . --fix"
+
+[tasks.format]
+description = "Format code"
+run = "uv run ruff format ."
+
+[tasks."format:check"]
+description = "Check code formatting"
+run = "uv run ruff format . --check"
+
+[tasks.sync]
+description = "Sync dependencies"
+run = "uv sync"
+
+[tasks.build]
+description = "Build the package"
+run = "uv build"

@@ -2,9 +2,9 @@
 
 Implementation of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) for iterative, self-referential AI development loops in Kiro CLI.
 
-## What is Ralph?
+## What is Ralph Wiggum?
 
-Ralph is a development methodology based on continuous AI agent loops. As Geoffrey Huntley describes it: **"Ralph is a Bash loop"** - a simple `while true` that repeatedly feeds an AI agent a prompt, allowing it to iteratively improve its work until completion.
+Ralph Wiggum is a development methodology based on continuous AI agent loops. As Geoffrey Huntley describes it: **"Ralph is a Bash loop"** - a simple `while true` that repeatedly feeds an AI agent a prompt, allowing it to iteratively improve its work until completion.
 
 The technique is named after Ralph Wiggum from The Simpsons, embodying the philosophy of persistent iteration despite setbacks.
 
@@ -22,6 +22,148 @@ This creates a **self-referential feedback loop** where:
 - The agent's previous work persists in files
 - Each iteration sees modified files and git history
 - The agent autonomously improves by reading its own past work
+
+```mermaid
+flowchart LR
+    A[Prompt] --> B[AI Agent]
+    B --> C[Code Changes]
+    C --> D[Files & Git]
+    D --> B
+    B -->|"&lt;promise&gt;DONE&lt;/promise&gt;"| E[Complete]
+```
+
+## Tech Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| CLI Framework | [Cyclopts](https://github.com/BrianPugh/cyclopts) | Command-line interface parsing |
+| Data Validation | [Pydantic](https://docs.pydantic.dev/) | Models, serialization, validation |
+| Configuration | [PyYAML](https://pyyaml.org/) | YAML frontmatter in state files |
+| Terminal UI | [Rich](https://rich.readthedocs.io/) | Formatted console output |
+| Package Manager | [uv](https://docs.astral.sh/uv/) | Fast Python package management |
+| Task Runner | [mise](https://mise.jdx.dev/) | Development task automation |
+| AI Backend | [Kiro CLI](https://kiro.dev/) | AI agent execution |
+| Testing | [pytest](https://pytest.org/) + asyncio + xdist | Test framework with async & parallel support |
+
+## Architecture
+
+### Project Structure
+
+```
+ralph-wiggum/
+├── src/ralph_wiggum/
+│   ├── cli.py              # Cyclopts CLI entry point
+│   ├── commands/           # CLI command implementations
+│   │   ├── init.py         # Initialize Ralph in a project
+│   │   ├── loop.py         # Start an iterative loop
+│   │   └── cancel.py       # Cancel an active loop
+│   ├── core/               # Core business logic
+│   │   ├── loop_runner.py  # Main loop orchestration
+│   │   ├── kiro_client.py  # Kiro CLI subprocess wrapper
+│   │   └── session_reader.py # SQLite session reader
+│   ├── models/             # Pydantic data models
+│   │   ├── config.py       # Loop configuration
+│   │   ├── state.py        # Loop state (markdown serialization)
+│   │   └── session.py      # Kiro session parsing
+│   └── data/               # Bundled template files
+│       ├── ralph-wiggum.json  # Kiro agent config template
+│       └── ralph-context.md   # Agent steering instructions
+└── tests/                  # Test suite
+```
+
+### Component Diagram
+
+```mermaid
+graph TB
+    subgraph CLI["CLI Layer"]
+        A[cli.py] --> B[commands/init.py]
+        A --> C[commands/loop.py]
+        A --> D[commands/cancel.py]
+    end
+
+    subgraph Core["Core Layer"]
+        E[loop_runner.py]
+        F[kiro_client.py]
+        G[session_reader.py]
+    end
+
+    subgraph Models["Models Layer"]
+        H[config.py<br/>LoopConfig]
+        I[state.py<br/>LoopState]
+        J[session.py<br/>KiroSession]
+    end
+
+    subgraph External["External Systems"]
+        K[(Kiro SQLite DB)]
+        L[Kiro CLI]
+    end
+
+    C --> E
+    E --> F
+    E --> G
+    E --> H
+    E --> I
+    G --> J
+    G --> K
+    F --> L
+```
+
+### Data Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Ralph CLI
+    participant LoopRunner
+    participant KiroClient
+    participant Kiro CLI
+    participant SQLite DB
+
+    User->>Ralph CLI: ralph loop "Build API" -m 10
+    Ralph CLI->>LoopRunner: run_loop(config)
+
+    loop Each Iteration
+        LoopRunner->>LoopRunner: Write state to<br/>.kiro/ralph-loop.local.md
+        LoopRunner->>KiroClient: run_chat()
+        KiroClient->>Kiro CLI: subprocess call
+        Kiro CLI->>Kiro CLI: Agent works on task
+        Kiro CLI-->>KiroClient: exit
+        KiroClient-->>LoopRunner: complete
+        LoopRunner->>SQLite DB: get_latest_session()
+        SQLite DB-->>LoopRunner: KiroSession
+        LoopRunner->>LoopRunner: check_completion_promise()
+
+        alt Promise Found
+            LoopRunner-->>Ralph CLI: Success
+            Ralph CLI-->>User: Task complete!
+        else Promise Not Found & iterations < max
+            LoopRunner->>LoopRunner: Continue loop
+        else Max iterations reached
+            LoopRunner-->>Ralph CLI: Max iterations
+            Ralph CLI-->>User: Stopped at limit
+        end
+    end
+```
+
+### State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initializing: ralph loop
+    Initializing --> Running: Create state file
+
+    Running --> CheckingPromise: Kiro CLI completes
+
+    CheckingPromise --> Running: No promise &<br/>iterations < max
+    CheckingPromise --> Completed: Promise found &<br/>iterations >= min
+    CheckingPromise --> MaxReached: iterations >= max
+
+    Running --> Cancelled: Ctrl+C or ralph cancel
+
+    Completed --> [*]: Cleanup
+    MaxReached --> [*]: Cleanup
+    Cancelled --> [*]: Cleanup
+```
 
 ## Installation
 
@@ -82,6 +224,7 @@ ralph loop <PROMPT> [OPTIONS]
 - `PROMPT` - Task description for the agent
 
 **Options:**
+- `--min-iterations, -n` - Minimum iterations before accepting completion (default: 1)
 - `--max-iterations, -m` - Max iterations before auto-stop (default: 0=unlimited)
 - `--completion-promise, -p` - Phrase that signals completion
 - `--agent, -a` - Path to custom agent config
@@ -92,8 +235,8 @@ ralph loop <PROMPT> [OPTIONS]
 # Basic loop with iteration limit
 ralph loop "Fix the authentication bug" -m 10
 
-# Loop with completion promise
-ralph loop "Add input validation" -p "VALIDATION COMPLETE" -m 20
+# Loop with completion promise and minimum iterations
+ralph loop "Add input validation" -p "VALIDATION COMPLETE" -n 3 -m 20
 
 # Custom agent config
 ralph loop "Build feature X" -a ./my-agent.json -m 15
@@ -109,20 +252,105 @@ ralph cancel
 
 ## How It Works
 
-1. **State File**: Loop state is stored in `.kiro/ralph-loop.local.md`
-   - Contains iteration count, settings, and the original prompt
-   - Agent reads this to understand its task
+### 1. State File
 
-2. **Session Parsing**: After each iteration, the session is saved to `.kiro/ralph-session.json`
-   - Parsed to check for completion promise in agent output
-   - Uses Pydantic models for robust JSON parsing
+Loop state is stored in `.kiro/ralph-loop.local.md` with YAML frontmatter:
 
-3. **Stop Hook**: The Kiro agent has a stop hook that saves the session
-   - Enables completion detection between iterations
+```yaml
+---
+active: true
+iteration: 3
+min_iterations: 2
+max_iterations: 20
+completion_promise: COMPLETE
+started_at: '2026-01-07T12:00:00Z'
+---
 
-4. **Completion Detection**: The loop checks for `<promise>PHRASE</promise>` in the last assistant message
-   - Only exact matches trigger completion
-   - Agent must genuinely complete the task to exit
+Build a REST API with CRUD operations...
+```
+
+The agent reads this file to understand:
+- Current iteration number
+- When it's allowed to complete (after `min_iterations`)
+- The completion phrase to output
+
+### 2. Session Reading
+
+After each Kiro CLI iteration:
+- Ralph reads the session from Kiro's SQLite database (`~/.local/share/kiro-cli/data.sqlite3`)
+- Parses the conversation history using Pydantic models
+- Extracts the last assistant message
+
+### 3. Completion Detection
+
+The loop checks for `<promise>PHRASE</promise>` in the last assistant message:
+
+```python
+pattern = rf"<promise>\s*{re.escape(promise)}\s*</promise>"
+```
+
+- Case insensitive matching
+- Flexible whitespace handling
+- Only triggers after `min_iterations` reached
+
+### 4. Minimum Iterations
+
+The `--min-iterations` flag prevents premature completion:
+- Agent must use early iterations productively
+- Promise tags are ignored until minimum is reached
+- Forces thorough work before declaring done
+
+## Runtime Files
+
+After running `ralph init`, your project will have:
+
+```
+your-project/
+└── .kiro/
+    ├── agents/
+    │   └── ralph-wiggum.json   # Kiro agent config
+    ├── steering/
+    │   └── ralph-context.md    # Agent steering context
+    └── ralph-loop.local.md     # Loop state (created during loop)
+```
+
+## Development
+
+### Prerequisites
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
+- [mise](https://mise.jdx.dev/) (optional, for task running)
+- [Kiro CLI](https://kiro.dev/) installed and authenticated
+
+### Setup
+
+```bash
+uv sync
+```
+
+### Running Tests
+
+```bash
+# Using mise
+mise run test              # Run all tests
+mise run test:parallel     # Run tests in parallel (pytest-xdist)
+
+# Using uv directly
+uv run pytest              # Standard run
+uv run pytest -n auto      # Parallel execution
+```
+
+### Available Tasks
+
+| Task | Description |
+|------|-------------|
+| `mise run test` | Run tests |
+| `mise run test:parallel` | Run tests in parallel |
+| `mise run lint` | Run ruff linter |
+| `mise run lint:fix` | Lint with auto-fix |
+| `mise run format` | Format code |
+| `mise run build` | Build the package |
 
 ## Prompt Writing Best Practices
 
@@ -191,47 +419,6 @@ Ralph embodies several key principles:
 - One-shot operations
 - Tasks with unclear success criteria
 - Production debugging
-
-## Architecture
-
-```
-ralph-wiggum/
-├── src/ralph_wiggum/
-│   ├── cli.py              # Cyclopts CLI
-│   ├── commands/
-│   │   ├── init.py         # Init command (creates .kiro/)
-│   │   ├── loop.py         # Loop command
-│   │   └── cancel.py       # Cancel command
-│   ├── core/
-│   │   ├── loop_runner.py  # Main loop logic
-│   │   └── kiro_client.py  # Kiro subprocess wrapper
-│   ├── models/
-│   │   ├── config.py       # CLI config (Pydantic)
-│   │   ├── state.py        # Loop state (Pydantic)
-│   │   └── session.py      # Session parsing (Pydantic)
-│   ├── hooks/
-│   │   └── stop_hook.py    # Kiro stop hook
-│   └── data/               # Bundled data files
-│       ├── ralph-wiggum.json
-│       └── ralph-context.md
-```
-
-After running `ralph init`, your project will have:
-
-```
-your-project/
-└── .kiro/
-    ├── agents/
-    │   └── ralph-wiggum.json   # Kiro agent config
-    └── steering/
-        └── ralph-context.md    # Agent steering context
-```
-
-## Requirements
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) package manager
-- [Kiro CLI](https://kiro.dev/) installed and authenticated
 
 ## Learn More
 

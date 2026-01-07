@@ -1,8 +1,6 @@
 """Tests for session model and promise checking."""
 
-import json
 
-import pytest
 
 from ralph_wiggum.models.session import HistoryTurn, KiroSession
 

@@ -127,7 +127,7 @@ class TestRealDatabaseIntegration:
         session = get_latest_session(test_dir)
 
         # Just verify we can read something
-        print(f"\n--- Real Database Test ---")
+        print("\n--- Real Database Test ---")
         print(f"Session found: {session is not None}")
         if session:
             print(f"Conversation ID: {session.conversation_id}")

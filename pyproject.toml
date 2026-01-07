@@ -8,10 +8,10 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "cyclopts>=3.0",
-    "pydantic>=2.0",
-    "pyyaml>=6.0",
-    "rich>=13.0",
+    "cyclopts>=4.4.4",
+    "pydantic>=2.12.5",
+    "pyyaml>=6.0.3",
+    "rich>=14.2.0",
 ]
 
 [project.scripts]
@@ -29,6 +29,14 @@ packages = ["src/ralph_wiggum"]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "ruff>=0.4",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.0.0",
+    "pytest-xdist>=3.5.0",
+    "ruff>=0.14.10",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-v"
