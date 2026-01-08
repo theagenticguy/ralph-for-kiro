@@ -1,46 +1,66 @@
-[settings]
-python.uv_venv_auto = true
-
 [tools]
-python = "3.13"
-uv = "latest"
+bun = "1.3"
+semgrep = "latest"
+
+[tasks.dev]
+description = "Run the CLI in development mode"
+run = "bun run src/index.ts"
+
+[tasks.build]
+description = "Build the CLI binary"
+run = "bun build src/index.ts --compile --outfile ralph"
 
 [tasks.test]
+alias = "t"
 description = "Run tests"
-run = "uv run pytest"
+run = "bun test"
 
-[tasks."test:parallel"]
-description = "Run tests in parallel with xdist"
-run = "uv run pytest -n auto"
-
-[tasks."test:cov"]
+[tasks."test:coverage"]
 description = "Run tests with coverage"
-run = "uv run pytest --cov=ralph_wiggum --cov-report=term-missing"
+run = "bun test --coverage"
 
 [tasks."test:watch"]
-description = "Run tests in watch mode (requires pytest-watch)"
-run = "uv run ptw"
+description = "Run tests in watch mode"
+run = "bun test --watch"
 
 [tasks.lint]
 description = "Run linter"
-run = "uv run ruff check ."
+run = "bunx biome check src tests"
 
 [tasks."lint:fix"]
 description = "Run linter with auto-fix"
-run = "uv run ruff check . --fix"
+run = "bunx biome check src tests --write"
 
 [tasks.format]
 description = "Format code"
-run = "uv run ruff format ."
+run = "bunx biome format src tests --write"
 
 [tasks."format:check"]
 description = "Check code formatting"
-run = "uv run ruff format . --check"
+run = "bunx biome format src tests"
 
-[tasks.sync]
-description = "Sync dependencies"
-run = "uv sync"
+[tasks.typecheck]
+description = "Run TypeScript type checking"
+run = "bunx tsc --noEmit"
 
-[tasks.build]
-description = "Build the package"
-run = "uv build"
+[tasks.install]
+description = "Install dependencies"
+run = "bun install"
+
+# Security tasks
+[tasks.audit]
+description = "Scan dependencies for vulnerabilities"
+run = "bun pm scan"
+
+[tasks."security:auto"]
+description = "Run Semgrep with auto-detection rules"
+run = "semgrep scan --config auto src"
+
+[tasks."security:owasp"]
+description = "Run Semgrep with OWASP Top 10 rules"
+run = "semgrep scan --config p/owasp-top-ten src"
+
+[tasks."security:all"]
+description = "Run all security scans"
+depends = ["audit", "security:auto", "security:owasp"]
+run = "echo 'All security scans complete'"

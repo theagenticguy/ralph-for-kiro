@@ -2,7 +2,7 @@
 
 Implementation of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) for iterative, self-referential AI development loops in Kiro CLI.
 
-> ⚠️ **IMPORTANT: Human Oversight Required**
+> **IMPORTANT: Human Oversight Required**
 >
 > This tool runs Kiro CLI in a fully autonomous loop using `--no-interactive` and `--trust-all-tools` flags via subprocess. This means:
 >
@@ -41,21 +41,24 @@ flowchart LR
     B --> C[Code Changes]
     C --> D[Files & Git]
     D --> B
-    B -->|"&lt;promise&gt;DONE&lt;/promise&gt;"| E[Complete]
+    B -->|"<promise>DONE</promise>"| E[Complete]
 ```
 
 ## Tech Stack
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| CLI Framework | [Cyclopts](https://github.com/BrianPugh/cyclopts) | Command-line interface parsing |
-| Data Validation | [Pydantic](https://docs.pydantic.dev/) | Models, serialization, validation |
-| Configuration | [PyYAML](https://pyyaml.org/) | YAML frontmatter in state files |
-| Terminal UI | [Rich](https://rich.readthedocs.io/) | Formatted console output |
-| Package Manager | [uv](https://docs.astral.sh/uv/) | Fast Python package management |
+| Runtime | [Bun 1.3](https://bun.sh/) | Fast JavaScript/TypeScript runtime |
+| Language | TypeScript | Type-safe development |
+| CLI Framework | [Commander](https://github.com/tj/commander.js) | Command-line interface parsing |
+| Data Validation | [Zod](https://zod.dev/) | Schema validation |
+| Configuration | [yaml](https://github.com/eemeli/yaml) | YAML frontmatter parsing |
+| Terminal UI | [@clack/prompts](https://github.com/natemoo-re/clack) + [picocolors](https://github.com/alexeyraspopov/picocolors) | Interactive prompts and colored output |
+| Database | Bun.SQL (SQLite) | Session reading from Kiro CLI |
 | Task Runner | [mise](https://mise.jdx.dev/) | Development task automation |
 | AI Backend | [Kiro CLI](https://kiro.dev/) | AI agent execution |
-| Testing | [pytest](https://pytest.org/) + asyncio + xdist | Test framework with async & parallel support |
+| Testing | [bun:test](https://bun.sh/docs/cli/test) | Built-in test framework |
+| Linting | [Biome](https://biomejs.dev/) | Fast linting and formatting |
 
 ## Architecture
 
@@ -63,24 +66,31 @@ flowchart LR
 
 ```
 ralph-wiggum/
-├── src/ralph_wiggum/
-│   ├── cli.py              # Cyclopts CLI entry point
-│   ├── commands/           # CLI command implementations
-│   │   ├── init.py         # Initialize Ralph in a project
-│   │   ├── loop.py         # Start an iterative loop
-│   │   └── cancel.py       # Cancel an active loop
-│   ├── core/               # Core business logic
-│   │   ├── loop_runner.py  # Main loop orchestration
-│   │   ├── kiro_client.py  # Kiro CLI subprocess wrapper
-│   │   └── session_reader.py # SQLite session reader
-│   ├── models/             # Pydantic data models
-│   │   ├── config.py       # Loop configuration
-│   │   ├── state.py        # Loop state (markdown serialization)
-│   │   └── session.py      # Kiro session parsing
-│   └── data/               # Bundled template files
-│       ├── ralph-wiggum.json  # Kiro agent config template
-│       └── ralph-context.md   # Agent steering instructions
-└── tests/                  # Test suite
+├── src/
+│   ├── index.ts              # CLI entry point
+│   ├── version.ts            # Version export
+│   ├── commands/             # CLI command implementations
+│   │   ├── init.ts           # Initialize Ralph in a project
+│   │   ├── loop.ts           # Start an iterative loop
+│   │   └── cancel.ts         # Cancel an active loop
+│   ├── core/                 # Core business logic
+│   │   ├── loop-runner.ts    # Main loop orchestration
+│   │   ├── kiro-client.ts    # Kiro CLI subprocess wrapper
+│   │   └── session-reader.ts # SQLite session reader
+│   ├── schemas/              # Zod schemas
+│   │   ├── config.ts         # Loop configuration
+│   │   ├── state.ts          # Loop state (markdown serialization)
+│   │   └── session.ts        # Kiro session parsing
+│   ├── utils/                # Utility functions
+│   │   └── paths.ts          # Path helpers
+│   └── data/                 # Bundled template files
+│       ├── ralph-wiggum.json # Kiro agent config template
+│       └── ralph-context.md  # Agent steering instructions
+└── tests/                    # Test suite
+    ├── cli.test.ts
+    ├── commands.test.ts
+    ├── core.test.ts
+    └── schemas.test.ts
 ```
 
 ### Component Diagram
@@ -88,21 +98,21 @@ ralph-wiggum/
 ```mermaid
 graph TB
     subgraph CLI["CLI Layer"]
-        A[cli.py] --> B[commands/init.py]
-        A --> C[commands/loop.py]
-        A --> D[commands/cancel.py]
+        A[index.ts] --> B[commands/init.ts]
+        A --> C[commands/loop.ts]
+        A --> D[commands/cancel.ts]
     end
 
     subgraph Core["Core Layer"]
-        E[loop_runner.py]
-        F[kiro_client.py]
-        G[session_reader.py]
+        E[loop-runner.ts]
+        F[kiro-client.ts]
+        G[session-reader.ts]
     end
 
-    subgraph Models["Models Layer"]
-        H[config.py<br/>LoopConfig]
-        I[state.py<br/>LoopState]
-        J[session.py<br/>KiroSession]
+    subgraph Schemas["Schemas Layer"]
+        H[config.ts<br/>LoopConfig]
+        I[state.ts<br/>LoopState]
+        J[session.ts<br/>KiroSession]
     end
 
     subgraph External["External Systems"]
@@ -132,18 +142,18 @@ sequenceDiagram
     participant SQLite DB
 
     User->>Ralph CLI: ralph loop "Build API" -m 10
-    Ralph CLI->>LoopRunner: run_loop(config)
+    Ralph CLI->>LoopRunner: runLoop(config)
 
     loop Each Iteration
         LoopRunner->>LoopRunner: Write state to<br/>.kiro/ralph-loop.local.md
-        LoopRunner->>KiroClient: run_chat()
+        LoopRunner->>KiroClient: runChat()
         KiroClient->>Kiro CLI: subprocess call
         Kiro CLI->>Kiro CLI: Agent works on task
         Kiro CLI-->>KiroClient: exit
         KiroClient-->>LoopRunner: complete
-        LoopRunner->>SQLite DB: get_latest_session()
+        LoopRunner->>SQLite DB: getLatestSession()
         SQLite DB-->>LoopRunner: KiroSession
-        LoopRunner->>LoopRunner: check_completion_promise()
+        LoopRunner->>LoopRunner: checkCompletionPromise()
 
         alt Promise Found
             LoopRunner-->>Ralph CLI: Success
@@ -183,10 +193,13 @@ stateDiagram-v2
 # Clone and install
 git clone <this-repo>
 cd ralph-wiggum
-uv sync
+bun install
 
-# Or install as a tool
-uv tool install .
+# Run in development
+bun run dev
+
+# Build standalone executable
+bun run build
 ```
 
 ## Quick Start
@@ -290,15 +303,15 @@ The agent reads this file to understand:
 
 After each Kiro CLI iteration:
 - Ralph reads the session from Kiro's SQLite database (`~/.local/share/kiro-cli/data.sqlite3`)
-- Parses the conversation history using Pydantic models
+- Parses the conversation history using Zod schemas
 - Extracts the last assistant message
 
 ### 3. Completion Detection
 
 The loop checks for `<promise>PHRASE</promise>` in the last assistant message:
 
-```python
-pattern = rf"<promise>\s*{re.escape(promise)}\s*</promise>"
+```typescript
+const pattern = new RegExp(`<promise>\\s*${escapeRegex(promise)}\\s*</promise>`, 'i');
 ```
 
 - Case insensitive matching
@@ -330,8 +343,7 @@ your-project/
 
 ### Prerequisites
 
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/)
+- [Bun](https://bun.sh/) 1.3+
 - [mise](https://mise.jdx.dev/) (optional, for task running)
 - [Kiro CLI](https://kiro.dev/) installed and authenticated
 
@@ -360,42 +372,59 @@ For optimal Ralph Wiggum usage, configure your Kiro CLI settings in `~/.kiro/set
 ### Setup
 
 ```bash
-uv sync
+bun install
 ```
 
 ### Running Tests
 
 ```bash
-# Using mise
-mise run test              # Run all tests
-mise run test:parallel     # Run tests in parallel (pytest-xdist)
+# Using bun directly
+bun test                    # Run all tests
+bun test --coverage         # Run with coverage
+bun test --watch            # Watch mode
 
-# Using uv directly
-uv run pytest              # Standard run
-uv run pytest -n auto      # Parallel execution
+# Using mise
+mise run test               # Run all tests
+mise run test:coverage      # Run with coverage
+mise run test:watch         # Watch mode
 ```
 
-### Available Tasks
+### Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `bun run dev` | Run CLI in development mode |
+| `bun run build` | Build standalone executable |
+| `bun test` | Run tests |
+| `bun run lint` | Run Biome linter |
+| `bun run lint:fix` | Lint with auto-fix |
+| `bun run format` | Format code |
+| `bun run typecheck` | Run TypeScript type checking |
+
+### Available mise Tasks
 
 | Task | Description |
 |------|-------------|
+| `mise run dev` | Run CLI in development mode |
+| `mise run build` | Build standalone executable |
 | `mise run test` | Run tests |
-| `mise run test:parallel` | Run tests in parallel |
-| `mise run lint` | Run ruff linter |
+| `mise run test:coverage` | Run tests with coverage |
+| `mise run test:watch` | Run tests in watch mode |
+| `mise run lint` | Run Biome linter |
 | `mise run lint:fix` | Lint with auto-fix |
 | `mise run format` | Format code |
-| `mise run build` | Build the package |
+| `mise run format:check` | Check code formatting |
 
 ## Prompt Writing Best Practices
 
 ### Clear Completion Criteria
 
-❌ Bad:
+Bad:
 ```
 Build a todo API and make it good.
 ```
 
-✅ Good:
+Good:
 ```
 Build a REST API for todos.
 
@@ -408,12 +437,12 @@ When complete:
 
 ### Incremental Goals
 
-❌ Bad:
+Bad:
 ```
 Create a complete e-commerce platform.
 ```
 
-✅ Good:
+Good:
 ```
 Phase 1: User authentication (JWT, tests)
 Phase 2: Product catalog (list/search, tests)

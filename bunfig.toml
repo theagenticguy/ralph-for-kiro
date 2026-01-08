@@ -1,0 +1,5 @@
+# Bun configuration
+# https://bun.sh/docs/runtime/bunfig
+
+[install.security]
+scanner = "bun-osv-scanner"
