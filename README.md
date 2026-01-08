@@ -289,6 +289,18 @@ min_iterations: 2
 max_iterations: 20
 completion_promise: COMPLETE
 started_at: '2026-01-07T12:00:00Z'
+previous_feedback:
+  quality_score: 7
+  quality_summary: Good progress on API endpoints
+  improvements:
+    - Add input validation
+    - Increase test coverage
+  next_steps:
+    - Implement validation middleware
+    - Write integration tests
+  ideas:
+    - Consider adding rate limiting
+  blockers: []
 ---
 
 Build a REST API with CRUD operations...
@@ -298,6 +310,7 @@ The agent reads this file to understand:
 - Current iteration number
 - When it's allowed to complete (after `min_iterations`)
 - The completion phrase to output
+- Feedback from the previous iteration (for continuity)
 
 ### 2. Session Reading
 
@@ -310,15 +323,42 @@ After each Kiro CLI iteration:
 
 The loop checks for `<promise>PHRASE</promise>` in the last assistant message:
 
-```typescript
-const pattern = new RegExp(`<promise>\\s*${escapeRegex(promise)}\\s*</promise>`, 'i');
-```
-
 - Case insensitive matching
 - Flexible whitespace handling
 - Only triggers after `min_iterations` reached
+- Uses safe regex pattern to prevent ReDoS attacks
 
-### 4. Minimum Iterations
+### 4. Structured Feedback
+
+At the end of each iteration, the agent outputs structured feedback in XML format:
+
+```xml
+<ralph-feedback>
+  <quality-assessment>
+    <score>7</score>
+    <summary>Good progress on core functionality</summary>
+  </quality-assessment>
+  <improvements>
+    - Add more edge case tests
+    - Refactor duplicate code
+  </improvements>
+  <next-steps>
+    - Implement caching
+    - Add documentation
+  </next-steps>
+  <ideas>
+    - Could add CLI flag for verbose output
+    - Consider progress indicators
+  </ideas>
+  <blockers>
+    - Need clarification on auth requirements
+  </blockers>
+</ralph-feedback>
+```
+
+This feedback is parsed and included in the state file for the next iteration, creating a memory bridge between sessions.
+
+### 5. Minimum Iterations
 
 The `--min-iterations` flag prevents premature completion:
 - Agent must use early iterations productively
@@ -400,6 +440,7 @@ mise run test:watch         # Watch mode
 | `bun run lint:fix` | Lint with auto-fix |
 | `bun run format` | Format code |
 | `bun run typecheck` | Run TypeScript type checking |
+| `bun pm scan` | Scan dependencies for vulnerabilities |
 
 ### Available mise Tasks
 
@@ -414,6 +455,11 @@ mise run test:watch         # Watch mode
 | `mise run lint:fix` | Lint with auto-fix |
 | `mise run format` | Format code |
 | `mise run format:check` | Check code formatting |
+| `mise run typecheck` | Run TypeScript type checking |
+| `mise run audit` | Scan dependencies for vulnerabilities |
+| `mise run security:auto` | Run Semgrep with auto-detection rules |
+| `mise run security:owasp` | Run Semgrep with OWASP Top 10 rules |
+| `mise run security:all` | Run all security scans |
 
 ## Prompt Writing Best Practices
 

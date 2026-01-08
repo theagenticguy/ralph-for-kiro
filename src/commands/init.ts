@@ -10,6 +10,7 @@ import pc from "picocolors";
 
 import { KIRO_AGENTS_DIR, KIRO_STEERING_DIR } from "../utils/paths";
 
+import steeringContent from "../data/ralph-context.md" with { type: "text" };
 // Import bundled data files
 import agentConfig from "../data/ralph-wiggum.json";
 
@@ -52,11 +53,7 @@ export async function initCommand(opts: InitOptions): Promise<void> {
 	await Bun.write(agentPath, `${JSON.stringify(agentConfig, null, 2)}\n`);
 	log.success(`${pc.green("Created")} ${agentPath}`);
 
-	// Read and write steering file
-	// Use import.meta.dir to find the data directory relative to this file
-	const steeringContent = await Bun.file(
-		join(import.meta.dir, "../data/ralph-context.md"),
-	).text();
+	// Write steering file (imported as text at compile time)
 	await Bun.write(steeringPath, steeringContent);
 	log.success(`${pc.green("Created")} ${steeringPath}`);
 
