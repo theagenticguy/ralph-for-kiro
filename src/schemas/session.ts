@@ -136,6 +136,28 @@ export interface RalphFeedback {
 }
 
 /**
+ * Sanitizes text by removing non-printable characters.
+ * Keeps newlines, tabs, and standard printable ASCII/Unicode.
+ * @param text - Text to sanitize
+ * @returns Sanitized text
+ */
+function sanitizeText(text: string): string {
+	// Remove control characters except newline (\n, 0x0A), carriage return (\r, 0x0D), and tab (\t, 0x09)
+	// Uses character code filtering to avoid lint warnings about control chars in regex
+	return text
+		.split("")
+		.filter((char) => {
+			const code = char.charCodeAt(0);
+			// Allow tab (9), newline (10), carriage return (13), and printable chars (32+)
+			// Block: 0-8, 11-12, 14-31, 127
+			if (code === 9 || code === 10 || code === 13) return true;
+			if (code < 32 || code === 127) return false;
+			return true;
+		})
+		.join("");
+}
+
+/**
  * Extracts content between XML-like tags.
  * @param text - The text to search in
  * @param tagName - The tag name to look for
@@ -147,7 +169,9 @@ export function extractTagContent(
 ): string | null {
 	const pattern = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, "i");
 	const match = text.match(pattern);
-	return match?.[1]?.trim() ?? null;
+	const content = match?.[1]?.trim() ?? null;
+	// Sanitize to remove any binary/control characters
+	return content ? sanitizeText(content) : null;
 }
 
 /**
