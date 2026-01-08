@@ -5,6 +5,21 @@
  */
 import YAML from "yaml";
 import { z } from "zod";
+import type { RalphFeedback } from "./session";
+
+/**
+ * Zod schema for previous feedback validation.
+ */
+export const PreviousFeedbackSchema = z
+	.object({
+		qualityScore: z.number().int().min(1).max(10).optional(),
+		qualitySummary: z.string().optional(),
+		improvements: z.array(z.string()).optional(),
+		nextSteps: z.array(z.string()).optional(),
+		ideas: z.array(z.string()).optional(),
+		blockers: z.array(z.string()).optional(),
+	})
+	.optional();
 
 /**
  * Zod schema for loop state validation.
@@ -25,6 +40,8 @@ export const LoopStateSchema = z.object({
 	startedAt: z.string().default(() => new Date().toISOString()),
 	/** The task prompt for the loop */
 	prompt: z.string(),
+	/** Feedback from the previous iteration */
+	previousFeedback: PreviousFeedbackSchema,
 });
 
 /**
@@ -32,6 +49,18 @@ export const LoopStateSchema = z.object({
  * Inferred from LoopStateSchema.
  */
 export type LoopState = z.infer<typeof LoopStateSchema>;
+
+/**
+ * YAML frontmatter structure for previous feedback (snake_case).
+ */
+interface YamlPreviousFeedback {
+	quality_score?: number;
+	quality_summary?: string;
+	improvements?: string[];
+	next_steps?: string[];
+	ideas?: string[];
+	blockers?: string[];
+}
 
 /**
  * YAML frontmatter structure for state file.
@@ -50,6 +79,8 @@ interface YamlFrontmatter {
 	completion_promise: string;
 	/** ISO timestamp when the loop started */
 	started_at: string;
+	/** Feedback from previous iteration */
+	previous_feedback?: YamlPreviousFeedback;
 }
 
 /**
@@ -71,7 +102,7 @@ interface YamlFrontmatter {
  * ```
  */
 export function stateToMarkdown(state: LoopState): string {
-	const { prompt, ...frontmatter } = state;
+	const { prompt, previousFeedback, ...frontmatter } = state;
 	// Convert camelCase to snake_case for YAML conventions
 	const yamlData: YamlFrontmatter = {
 		active: frontmatter.active,
@@ -81,6 +112,19 @@ export function stateToMarkdown(state: LoopState): string {
 		completion_promise: frontmatter.completionPromise,
 		started_at: frontmatter.startedAt,
 	};
+
+	// Add previous feedback if present (convert camelCase to snake_case)
+	if (previousFeedback) {
+		yamlData.previous_feedback = {
+			quality_score: previousFeedback.qualityScore,
+			quality_summary: previousFeedback.qualitySummary,
+			improvements: previousFeedback.improvements,
+			next_steps: previousFeedback.nextSteps,
+			ideas: previousFeedback.ideas,
+			blockers: previousFeedback.blockers,
+		};
+	}
+
 	const yamlStr = YAML.stringify(yamlData);
 	return `---\n${yamlStr}---\n\n${prompt}`;
 }
@@ -111,6 +155,19 @@ export function stateFromMarkdown(content: string): LoopState {
 
 	const prompt = parts.slice(2).join("---").trim();
 
+	// Convert previous feedback from snake_case to camelCase
+	let previousFeedback: RalphFeedback | undefined;
+	if (fm.previous_feedback) {
+		previousFeedback = {
+			qualityScore: fm.previous_feedback.quality_score,
+			qualitySummary: fm.previous_feedback.quality_summary,
+			improvements: fm.previous_feedback.improvements,
+			nextSteps: fm.previous_feedback.next_steps,
+			ideas: fm.previous_feedback.ideas,
+			blockers: fm.previous_feedback.blockers,
+		};
+	}
+
 	// Convert snake_case back to camelCase
 	return LoopStateSchema.parse({
 		active: fm.active,
@@ -120,5 +177,6 @@ export function stateFromMarkdown(content: string): LoopState {
 		completionPromise: fm.completion_promise,
 		startedAt: fm.started_at,
 		prompt,
+		previousFeedback,
 	});
 }

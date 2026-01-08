@@ -9,7 +9,11 @@ import { log } from "@clack/prompts";
 import pc from "picocolors";
 
 import type { LoopConfig } from "../schemas/config";
-import { checkCompletionPromise } from "../schemas/session";
+import {
+	type RalphFeedback,
+	checkCompletionPromise,
+	extractRalphFeedback,
+} from "../schemas/session";
 import { type LoopState, stateToMarkdown } from "../schemas/state";
 import { STATE_FILE } from "../utils/paths";
 import { KiroClient } from "./kiro-client";
@@ -44,6 +48,7 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 	console.log();
 
 	let iteration = 0;
+	let previousFeedback: RalphFeedback | undefined;
 
 	// Cleanup function to remove state file
 	const cleanup = async (): Promise<void> => {
@@ -70,6 +75,7 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 				completionPromise: config.completionPromise,
 				startedAt: new Date().toISOString(),
 				prompt: config.prompt,
+				previousFeedback,
 			};
 
 			// Ensure directory exists and write state file
@@ -86,9 +92,21 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 				log.warn(pc.red(`Kiro exited with code ${exitCode}`));
 			}
 
+			// Get the session to check completion and extract feedback
+			const session = getLatestSession(cwd);
+
+			// Extract feedback from this iteration for the next
+			if (session) {
+				previousFeedback = extractRalphFeedback(session) ?? undefined;
+				if (previousFeedback?.qualityScore !== undefined) {
+					log.message(
+						pc.dim(`Quality score: ${previousFeedback.qualityScore}/10`),
+					);
+				}
+			}
+
 			// Only check for completion after minimum iterations reached
 			if (iteration >= config.minIterations) {
-				const session = getLatestSession(cwd);
 				if (
 					session &&
 					checkCompletionPromise(session, config.completionPromise)

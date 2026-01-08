@@ -3,8 +3,11 @@ import { LoopConfigSchema } from "../src/schemas/config.ts";
 import {
 	KiroSessionSchema,
 	checkCompletionPromise,
+	extractRalphFeedback,
+	extractTagContent,
 	getAssistantText,
 	getLastAssistantText,
+	parseBulletList,
 } from "../src/schemas/session.ts";
 import {
 	LoopStateSchema,
@@ -308,5 +311,292 @@ describe("checkCompletionPromise", () => {
 	test("returns false for empty history", () => {
 		const session = KiroSessionSchema.parse({ history: [] });
 		expect(checkCompletionPromise(session, "COMPLETE")).toBe(false);
+	});
+});
+
+describe("extractTagContent", () => {
+	test("extracts content from simple tag", () => {
+		const text = "Some text <tag>content here</tag> more text";
+		expect(extractTagContent(text, "tag")).toBe("content here");
+	});
+
+	test("extracts multiline content", () => {
+		const text = "<tag>\nline1\nline2\n</tag>";
+		expect(extractTagContent(text, "tag")).toBe("line1\nline2");
+	});
+
+	test("case insensitive tag matching", () => {
+		const text = "<TAG>content</TAG>";
+		expect(extractTagContent(text, "tag")).toBe("content");
+	});
+
+	test("returns null for missing tag", () => {
+		const text = "no tags here";
+		expect(extractTagContent(text, "tag")).toBeNull();
+	});
+
+	test("extracts first occurrence only", () => {
+		const text = "<tag>first</tag> <tag>second</tag>";
+		expect(extractTagContent(text, "tag")).toBe("first");
+	});
+
+	test("trims whitespace from content", () => {
+		const text = "<tag>  content with spaces  </tag>";
+		expect(extractTagContent(text, "tag")).toBe("content with spaces");
+	});
+});
+
+describe("parseBulletList", () => {
+	test("parses dash bullets", () => {
+		const text = "- item 1\n- item 2\n- item 3";
+		expect(parseBulletList(text)).toEqual(["item 1", "item 2", "item 3"]);
+	});
+
+	test("parses asterisk bullets", () => {
+		const text = "* item 1\n* item 2";
+		expect(parseBulletList(text)).toEqual(["item 1", "item 2"]);
+	});
+
+	test("handles mixed bullet styles", () => {
+		const text = "- dash item\n* star item\n- another dash";
+		expect(parseBulletList(text)).toEqual([
+			"dash item",
+			"star item",
+			"another dash",
+		]);
+	});
+
+	test("ignores non-bullet lines", () => {
+		const text = "intro text\n- bullet\nnot a bullet\n- another";
+		expect(parseBulletList(text)).toEqual(["bullet", "another"]);
+	});
+
+	test("handles empty input", () => {
+		expect(parseBulletList("")).toEqual([]);
+	});
+
+	test("trims whitespace from items", () => {
+		const text = "-   item with spaces   \n-item no space";
+		expect(parseBulletList(text)).toEqual([
+			"item with spaces",
+			"item no space",
+		]);
+	});
+
+	test("filters out empty items", () => {
+		const text = "- valid\n-\n- also valid";
+		expect(parseBulletList(text)).toEqual(["valid", "also valid"]);
+	});
+});
+
+describe("extractRalphFeedback", () => {
+	test("extracts full feedback structure", () => {
+		const session = KiroSessionSchema.parse({
+			history: [
+				{
+					assistant: {
+						Response: {
+							message_id: "1",
+							content: `Done with the task!
+<ralph-feedback>
+<quality-assessment>
+<score>8</score>
+<summary>Great progress today</summary>
+</quality-assessment>
+<improvements>
+- Add more tests
+- Refactor utils
+</improvements>
+<next-steps>
+- Implement caching
+</next-steps>
+<ideas>
+- Could add progress bar
+</ideas>
+<blockers>
+- Need API key
+</blockers>
+</ralph-feedback>`,
+						},
+					},
+				},
+			],
+		});
+
+		const feedback = extractRalphFeedback(session);
+
+		expect(feedback).not.toBeNull();
+		expect(feedback?.qualityScore).toBe(8);
+		expect(feedback?.qualitySummary).toBe("Great progress today");
+		expect(feedback?.improvements).toEqual([
+			"Add more tests",
+			"Refactor utils",
+		]);
+		expect(feedback?.nextSteps).toEqual(["Implement caching"]);
+		expect(feedback?.ideas).toEqual(["Could add progress bar"]);
+		expect(feedback?.blockers).toEqual(["Need API key"]);
+	});
+
+	test("extracts partial feedback", () => {
+		const session = KiroSessionSchema.parse({
+			history: [
+				{
+					assistant: {
+						Response: {
+							message_id: "1",
+							content: `<ralph-feedback>
+<quality-assessment>
+<score>5</score>
+</quality-assessment>
+</ralph-feedback>`,
+						},
+					},
+				},
+			],
+		});
+
+		const feedback = extractRalphFeedback(session);
+
+		expect(feedback).not.toBeNull();
+		expect(feedback?.qualityScore).toBe(5);
+		expect(feedback?.qualitySummary).toBeUndefined();
+		expect(feedback?.improvements).toBeUndefined();
+	});
+
+	test("returns null when no feedback block", () => {
+		const session = KiroSessionSchema.parse({
+			history: [
+				{
+					assistant: {
+						Response: {
+							message_id: "1",
+							content: "Just some regular response without feedback",
+						},
+					},
+				},
+			],
+		});
+
+		expect(extractRalphFeedback(session)).toBeNull();
+	});
+
+	test("returns null for empty history", () => {
+		const session = KiroSessionSchema.parse({ history: [] });
+		expect(extractRalphFeedback(session)).toBeNull();
+	});
+
+	test("returns null for empty feedback block", () => {
+		const session = KiroSessionSchema.parse({
+			history: [
+				{
+					assistant: {
+						Response: {
+							message_id: "1",
+							content: "<ralph-feedback></ralph-feedback>",
+						},
+					},
+				},
+			],
+		});
+
+		expect(extractRalphFeedback(session)).toBeNull();
+	});
+
+	test("validates score range 1-10", () => {
+		const createSession = (score: string) =>
+			KiroSessionSchema.parse({
+				history: [
+					{
+						assistant: {
+							Response: {
+								message_id: "1",
+								content: `<ralph-feedback><quality-assessment><score>${score}</score></quality-assessment></ralph-feedback>`,
+							},
+						},
+					},
+				],
+			});
+
+		// Valid scores
+		expect(extractRalphFeedback(createSession("1"))?.qualityScore).toBe(1);
+		expect(extractRalphFeedback(createSession("10"))?.qualityScore).toBe(10);
+
+		// Invalid scores should not be included
+		expect(
+			extractRalphFeedback(createSession("0"))?.qualityScore,
+		).toBeUndefined();
+		expect(
+			extractRalphFeedback(createSession("11"))?.qualityScore,
+		).toBeUndefined();
+		expect(
+			extractRalphFeedback(createSession("abc"))?.qualityScore,
+		).toBeUndefined();
+	});
+});
+
+describe("stateToMarkdown / stateFromMarkdown with previousFeedback", () => {
+	test("round-trips state with previousFeedback", () => {
+		const original = LoopStateSchema.parse({
+			active: true,
+			iteration: 2,
+			minIterations: 1,
+			maxIterations: 10,
+			completionPromise: "DONE",
+			startedAt: "2025-01-08T12:00:00.000Z",
+			prompt: "Test task",
+			previousFeedback: {
+				qualityScore: 7,
+				qualitySummary: "Good progress",
+				improvements: ["Add tests", "Refactor code"],
+				nextSteps: ["Implement feature"],
+				ideas: ["Use caching"],
+				blockers: ["Need API access"],
+			},
+		});
+
+		const markdown = stateToMarkdown(original);
+		const parsed = stateFromMarkdown(markdown);
+
+		expect(parsed.previousFeedback).toBeDefined();
+		expect(parsed.previousFeedback?.qualityScore).toBe(7);
+		expect(parsed.previousFeedback?.qualitySummary).toBe("Good progress");
+		expect(parsed.previousFeedback?.improvements).toEqual([
+			"Add tests",
+			"Refactor code",
+		]);
+		expect(parsed.previousFeedback?.nextSteps).toEqual(["Implement feature"]);
+		expect(parsed.previousFeedback?.ideas).toEqual(["Use caching"]);
+		expect(parsed.previousFeedback?.blockers).toEqual(["Need API access"]);
+	});
+
+	test("round-trips state without previousFeedback", () => {
+		const original = LoopStateSchema.parse({
+			active: true,
+			iteration: 1,
+			prompt: "First iteration",
+		});
+
+		const markdown = stateToMarkdown(original);
+		const parsed = stateFromMarkdown(markdown);
+
+		expect(parsed.previousFeedback).toBeUndefined();
+	});
+
+	test("serializes previous_feedback in snake_case", () => {
+		const state = LoopStateSchema.parse({
+			prompt: "Test",
+			previousFeedback: {
+				qualityScore: 8,
+				qualitySummary: "Good work",
+				nextSteps: ["Next step"],
+			},
+		});
+
+		const markdown = stateToMarkdown(state);
+
+		expect(markdown).toContain("previous_feedback:");
+		expect(markdown).toContain("quality_score: 8");
+		expect(markdown).toContain("quality_summary: Good work");
+		expect(markdown).toContain("next_steps:");
 	});
 });

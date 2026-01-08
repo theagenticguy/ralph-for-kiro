@@ -17,6 +17,13 @@ Read `.kiro/ralph-loop.local.md` for:
 - `min_iterations`: Minimum iterations required before completion is accepted
 - `max_iterations`: When the loop will stop (0=unlimited)
 - `completion_promise`: Phrase to output when done
+- `previous_feedback`: Structured feedback from your last iteration (if any)
+  - `quality_score`: Self-assessment 1-10
+  - `quality_summary`: Brief summary of work quality
+  - `improvements`: Areas for improvement
+  - `next_steps`: Planned next actions
+  - `ideas`: Creative ideas for the project
+  - `blockers`: Issues blocking progress
 - The task prompt is after the YAML frontmatter (after the second `---`)
 
 ## Your Task
@@ -62,3 +69,53 @@ The Ralph Wiggum technique embraces iteration over perfection:
 - Early iterations: explore, build foundation, test assumptions
 - Later iterations: refine, polish, verify completeness
 - The loop is designed to continue until the promise is GENUINELY TRUE
+
+## Structured Feedback
+
+At the END of EVERY iteration, output structured feedback using this XML format:
+
+```xml
+<ralph-feedback>
+<quality-assessment>
+<score>7</score>
+<summary>Good progress on core functionality, tests passing</summary>
+</quality-assessment>
+
+<improvements>
+- Add more edge case tests
+- Refactor duplicate code in utils module
+</improvements>
+
+<next-steps>
+- Implement caching for performance
+- Add documentation for public API
+</next-steps>
+
+<ideas>
+- Could add CLI flag for verbose output
+- Consider adding progress indicators
+</ideas>
+
+<blockers>
+- Need clarification on authentication requirements
+</blockers>
+</ralph-feedback>
+```
+
+### Feedback Tags
+
+- `<quality-assessment>`: Self-evaluation of current work
+  - `<score>`: Integer 1-10 (1=poor, 10=excellent)
+  - `<summary>`: Brief assessment of work quality
+- `<improvements>`: Bullet list of areas needing improvement
+- `<next-steps>`: Bullet list of planned actions for next iteration
+- `<ideas>`: Bullet list of creative ideas or suggestions
+- `<blockers>`: Bullet list of issues blocking progress
+
+### Rules
+
+- **ALWAYS** output feedback at the end of each iteration
+- Use `-` or `*` for bullet points in lists
+- Be honest in quality assessment - this helps future iterations
+- Include relevant sections only (skip empty sections)
+- Feedback persists to the next iteration via `previous_feedback` in state file

@@ -122,3 +122,100 @@ export function checkCompletionPromise(
 
 	return false;
 }
+
+/**
+ * Structured feedback extracted from assistant response.
+ */
+export interface RalphFeedback {
+	qualityScore?: number;
+	qualitySummary?: string;
+	improvements?: string[];
+	nextSteps?: string[];
+	ideas?: string[];
+	blockers?: string[];
+}
+
+/**
+ * Extracts content between XML-like tags.
+ * @param text - The text to search in
+ * @param tagName - The tag name to look for
+ * @returns The content between tags, or null if not found
+ */
+export function extractTagContent(
+	text: string,
+	tagName: string,
+): string | null {
+	const pattern = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, "i");
+	const match = text.match(pattern);
+	return match?.[1]?.trim() ?? null;
+}
+
+/**
+ * Parses bullet points into array.
+ * @param text - Text containing bullet points (- or *)
+ * @returns Array of parsed bullet items
+ */
+export function parseBulletList(text: string): string[] {
+	if (!text) return [];
+	return text
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line.startsWith("-") || line.startsWith("*"))
+		.map((line) => line.replace(/^[-*]\s*/, "").trim())
+		.filter(Boolean);
+}
+
+/**
+ * Extracts structured feedback from session.
+ * @param session - The Kiro session to extract feedback from
+ * @returns Extracted feedback, or null if no feedback block found
+ */
+export function extractRalphFeedback(
+	session: KiroSession,
+): RalphFeedback | null {
+	const text = getLastAssistantText(session);
+	if (!text) return null;
+
+	const feedbackBlock = extractTagContent(text, "ralph-feedback");
+	if (!feedbackBlock) return null;
+
+	const feedback: RalphFeedback = {};
+
+	// Quality assessment
+	const qualityBlock = extractTagContent(feedbackBlock, "quality-assessment");
+	if (qualityBlock) {
+		const scoreText = extractTagContent(qualityBlock, "score");
+		if (scoreText) {
+			const score = Number.parseInt(scoreText, 10);
+			if (!Number.isNaN(score) && score >= 1 && score <= 10) {
+				feedback.qualityScore = score;
+			}
+		}
+		feedback.qualitySummary =
+			extractTagContent(qualityBlock, "summary") ?? undefined;
+	}
+
+	// Lists
+	const improvements = extractTagContent(feedbackBlock, "improvements");
+	if (improvements) feedback.improvements = parseBulletList(improvements);
+
+	const nextSteps = extractTagContent(feedbackBlock, "next-steps");
+	if (nextSteps) feedback.nextSteps = parseBulletList(nextSteps);
+
+	const ideas = extractTagContent(feedbackBlock, "ideas");
+	if (ideas) feedback.ideas = parseBulletList(ideas);
+
+	const blockers = extractTagContent(feedbackBlock, "blockers");
+	if (blockers) feedback.blockers = parseBulletList(blockers);
+
+	// Return null if nothing extracted
+	const hasContent =
+		feedback.qualityScore !== undefined ||
+		feedback.qualitySummary !== undefined ||
+		(feedback.improvements?.length ?? 0) > 0 ||
+		(feedback.nextSteps?.length ?? 0) > 0 ||
+		(feedback.ideas?.length ?? 0) > 0 ||
+		(feedback.blockers?.length ?? 0) > 0;
+
+	return hasContent ? feedback : null;
+}

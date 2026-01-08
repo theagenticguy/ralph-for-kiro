@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 /**
  * @fileoverview SQLite session reader for Kiro CLI.
  * Reads conversation history from Kiro's SQLite database.
@@ -20,7 +21,7 @@ import { KIRO_DB_PATH } from "../utils/paths";
  * ```
  */
 export function getLatestSession(cwd?: string): KiroSession | null {
-	const targetDir = cwd ?? process.cwd();
+	const targetDir = resolve(cwd ?? process.cwd());
 
 	// Check if database exists
 	const dbFile = Bun.file(KIRO_DB_PATH);
