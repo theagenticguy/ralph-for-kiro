@@ -92,16 +92,32 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 				log.warn(pc.red(`Kiro exited with code ${exitCode}`));
 			}
 
+			// Small delay to ensure Kiro has fully released the database
+			// and any WAL writes have synced
+			await new Promise((resolve) => setTimeout(resolve, 500));
+
 			// Get the session to check completion and extract feedback
-			const session = getLatestSession(cwd);
+			// Wrap in try-catch to handle any database/memory issues gracefully
+			let session = null;
+			try {
+				session = getLatestSession(cwd);
+			} catch (err) {
+				log.warn(pc.dim(`Could not read session: ${err}`));
+			}
 
 			// Extract feedback from this iteration for the next
-			if (session) {
-				previousFeedback = extractRalphFeedback(session) ?? undefined;
-				if (previousFeedback?.qualityScore !== undefined) {
-					log.message(
-						pc.dim(`Quality score: ${previousFeedback.qualityScore}/10`),
-					);
+			// Only if session looks valid (has history array)
+			if (session?.history && Array.isArray(session.history)) {
+				try {
+					previousFeedback = extractRalphFeedback(session) ?? undefined;
+					if (previousFeedback?.qualityScore !== undefined) {
+						log.message(
+							pc.dim(`Quality score: ${previousFeedback.qualityScore}/10`),
+						);
+					}
+				} catch (err) {
+					log.warn(pc.dim(`Could not extract feedback: ${err}`));
+					previousFeedback = undefined;
 				}
 			}
 

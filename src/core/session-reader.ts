@@ -48,8 +48,27 @@ export function getLatestSession(cwd?: string): KiroSession | null {
 			return null;
 		}
 
+		// Validate the value is a non-empty string
+		if (typeof row.value !== "string" || !row.value) {
+			console.warn("Warning: Session value is not a valid string");
+			return null;
+		}
+
+		// Sanity check - session JSON shouldn't be excessively large (>50MB suggests corruption)
+		if (row.value.length > 50 * 1024 * 1024) {
+			console.warn("Warning: Session data is suspiciously large, skipping");
+			return null;
+		}
+
 		// Parse JSON and validate with Zod schema
 		const sessionJson = JSON.parse(row.value);
+
+		// Additional sanity check - must have history array
+		if (!sessionJson || !Array.isArray(sessionJson.history)) {
+			console.warn("Warning: Session data missing history array");
+			return null;
+		}
+
 		return KiroSessionSchema.parse(sessionJson);
 	} catch (error) {
 		console.warn(`Warning: Could not read session: ${error}`);
