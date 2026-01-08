@@ -54,7 +54,7 @@ flowchart LR
 | Data Validation | [Zod](https://zod.dev/) | Schema validation |
 | Configuration | [yaml](https://github.com/eemeli/yaml) | YAML frontmatter parsing |
 | Terminal UI | [@clack/prompts](https://github.com/natemoo-re/clack) + [picocolors](https://github.com/alexeyraspopov/picocolors) | Interactive prompts and colored output |
-| Database | Bun.SQL (SQLite) | Session reading from Kiro CLI |
+| Database | [bun:sqlite](https://bun.sh/docs/api/sqlite) | Session reading from Kiro CLI |
 | Task Runner | [mise](https://mise.jdx.dev/) | Development task automation |
 | AI Backend | [Kiro CLI](https://kiro.dev/) | AI agent execution |
 | Testing | [bun:test](https://bun.sh/docs/cli/test) | Built-in test framework |

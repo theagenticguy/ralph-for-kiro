@@ -1,10 +1,10 @@
-import { resolve } from "node:path";
 /**
  * @fileoverview SQLite session reader for Kiro CLI.
  * Reads conversation history from Kiro's SQLite database.
  * @module core/session-reader
  */
-import { SQL } from "bun";
+import { Database } from "bun:sqlite";
+import { resolve } from "node:path";
 import { type KiroSession, KiroSessionSchema } from "../schemas/session";
 import { KIRO_DB_PATH } from "../utils/paths";
 
@@ -29,35 +29,34 @@ export function getLatestSession(cwd?: string): KiroSession | null {
 		return null;
 	}
 
+	let db: Database | null = null;
 	try {
-		// Use Bun.SQL tagged template for SQLite
-		const sql = new SQL(`sqlite://${KIRO_DB_PATH}`);
+		// Use bun:sqlite Database class (more stable than Bun.SQL tagged templates)
+		db = new Database(KIRO_DB_PATH, { readonly: true });
 
-		// Query with tagged template (safe parameter binding)
-		const rows = sql`
-      SELECT value FROM conversations_v2
-      WHERE key = ${targetDir}
-      ORDER BY created_at DESC
-      LIMIT 1
-    `;
+		// Query with prepared statement
+		const stmt = db.prepare(`
+			SELECT value FROM conversations_v2
+			WHERE key = ?
+			ORDER BY created_at DESC
+			LIMIT 1
+		`);
 
-		// SQLite queries are synchronous in Bun.SQL but return array
-		const result = rows as unknown as Array<{ value: string }>;
+		const row = stmt.get(targetDir) as { value: string } | null;
 
-		if (!result.length) {
+		if (!row) {
 			return null;
 		}
 
 		// Parse JSON and validate with Zod schema
-		const firstResult = result[0];
-		if (!firstResult) {
-			return null;
-		}
-		const sessionJson = JSON.parse(firstResult.value);
+		const sessionJson = JSON.parse(row.value);
 		return KiroSessionSchema.parse(sessionJson);
 	} catch (error) {
 		console.warn(`Warning: Could not read session: ${error}`);
 		return null;
+	} finally {
+		// Close database connection
+		db?.close();
 	}
 }
 
