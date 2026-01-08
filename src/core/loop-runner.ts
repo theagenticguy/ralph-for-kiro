@@ -40,6 +40,15 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 	const client = new KiroClient(config.agentName);
 	const cwd = process.cwd();
 
+	// Cleanup function to remove state file
+	const cleanup = async (): Promise<void> => {
+		await unlink(STATE_FILE).catch(() => {});
+	};
+
+	// Clean any stale state file from a previous crashed loop
+	// This prevents "already complete" issues when starting a new loop
+	await cleanup();
+
 	// Display startup info
 	log.info(pc.bold(pc.blue("Ralph loop starting")));
 	log.message(`   Min iterations: ${config.minIterations}`);
@@ -49,11 +58,6 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 
 	let iteration = 0;
 	let previousFeedback: RalphFeedback | undefined;
-
-	// Cleanup function to remove state file
-	const cleanup = async (): Promise<void> => {
-		await unlink(STATE_FILE).catch(() => {});
-	};
 
 	// Handle Ctrl+C gracefully
 	process.on("SIGINT", async () => {

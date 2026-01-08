@@ -43,6 +43,7 @@ export class KiroClient {
 	 * @returns Exit code from kiro-cli
 	 */
 	async runChat(prompt: string): Promise<number> {
+		// Pass prompt as positional argument [INPUT], not via stdin
 		const proc = Bun.spawn(
 			[
 				"kiro-cli",
@@ -51,9 +52,9 @@ export class KiroClient {
 				this.agentName,
 				"--no-interactive",
 				"--trust-all-tools",
+				prompt, // Positional argument for the input question
 			],
 			{
-				stdin: new Response(prompt),
 				stdout: "inherit", // Show output in real-time
 				stderr: "inherit",
 			},
