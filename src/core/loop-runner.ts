@@ -14,7 +14,7 @@ import {
 	checkCompletionPromise,
 	extractRalphFeedback,
 } from "../schemas/session";
-import { type LoopState, stateToMarkdown } from "../schemas/state";
+import { type LoopState, stateToJson } from "../schemas/state";
 import { STATE_FILE } from "../utils/paths";
 import { KiroClient } from "./kiro-client";
 import { getLatestSession } from "./session-reader";
@@ -84,7 +84,7 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 
 			// Ensure directory exists and write state file
 			await mkdir(dirname(STATE_FILE), { recursive: true });
-			await Bun.write(STATE_FILE, stateToMarkdown(state));
+			await Bun.write(STATE_FILE, stateToJson(state));
 
 			// Log iteration start
 			log.step(pc.yellow(`Iteration ${iteration}`));

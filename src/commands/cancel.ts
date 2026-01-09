@@ -6,7 +6,7 @@
 import { unlink } from "node:fs/promises";
 import { log } from "@clack/prompts";
 
-import { stateFromMarkdown } from "../schemas/state";
+import { stateFromJson } from "../schemas/state";
 import { SESSION_FILE, STATE_FILE } from "../utils/paths";
 
 /**
@@ -26,7 +26,7 @@ export async function cancelCommand(): Promise<void> {
 	let iteration: number | string = "?";
 	try {
 		const content = await stateFile.text();
-		const state = stateFromMarkdown(content);
+		const state = stateFromJson(content);
 		iteration = state.iteration;
 	} catch {
 		// Ignore parse errors, just show "?"

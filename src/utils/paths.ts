@@ -15,8 +15,8 @@ export const KIRO_AGENTS_DIR = join(KIRO_DIR, "agents");
 /** Directory for kiro steering files */
 export const KIRO_STEERING_DIR = join(KIRO_DIR, "steering");
 
-/** Path to the Ralph loop state file (markdown with YAML frontmatter) */
-export const STATE_FILE = join(KIRO_DIR, "ralph-loop.local.md");
+/** Path to the Ralph loop state file (JSON format) */
+export const STATE_FILE = join(KIRO_DIR, "ralph-loop.local.json");
 
 /** Path to the Ralph session file */
 export const SESSION_FILE = join(KIRO_DIR, "ralph-session.json");

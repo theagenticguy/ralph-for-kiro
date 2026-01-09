@@ -11,8 +11,8 @@ import {
 } from "../src/schemas/session.ts";
 import {
 	LoopStateSchema,
-	stateFromMarkdown,
-	stateToMarkdown,
+	stateFromJson,
+	stateToJson,
 } from "../src/schemas/state.ts";
 
 describe("LoopConfigSchema", () => {
@@ -79,8 +79,8 @@ describe("LoopStateSchema", () => {
 	});
 });
 
-describe("stateToMarkdown / stateFromMarkdown", () => {
-	test("round-trips state through markdown", () => {
+describe("stateToJson / stateFromJson", () => {
+	test("round-trips state through JSON", () => {
 		const original = LoopStateSchema.parse({
 			active: true,
 			iteration: 3,
@@ -91,8 +91,8 @@ describe("stateToMarkdown / stateFromMarkdown", () => {
 			prompt: "Complete the task",
 		});
 
-		const markdown = stateToMarkdown(original);
-		const parsed = stateFromMarkdown(markdown);
+		const json = stateToJson(original);
+		const parsed = stateFromJson(json);
 
 		expect(parsed.active).toBe(original.active);
 		expect(parsed.iteration).toBe(original.iteration);
@@ -103,18 +103,29 @@ describe("stateToMarkdown / stateFromMarkdown", () => {
 		expect(parsed.prompt).toBe(original.prompt);
 	});
 
-	test("handles prompt with triple dashes", () => {
+	test("handles prompt with special characters including triple dashes", () => {
 		const original = LoopStateSchema.parse({
 			prompt: "Here is some code:\n---\ncode block\n---\nMore text",
 		});
 
-		const markdown = stateToMarkdown(original);
-		const parsed = stateFromMarkdown(markdown);
+		const json = stateToJson(original);
+		const parsed = stateFromJson(json);
 
 		expect(parsed.prompt).toBe(original.prompt);
 	});
 
-	test("produces correct YAML frontmatter format", () => {
+	test("handles prompt with quotes and backslashes", () => {
+		const original = LoopStateSchema.parse({
+			prompt: 'Print "hello\\nworld" to console',
+		});
+
+		const json = stateToJson(original);
+		const parsed = stateFromJson(json);
+
+		expect(parsed.prompt).toBe(original.prompt);
+	});
+
+	test("produces valid JSON format", () => {
 		const state = LoopStateSchema.parse({
 			active: true,
 			iteration: 1,
@@ -125,21 +136,27 @@ describe("stateToMarkdown / stateFromMarkdown", () => {
 			prompt: "My prompt",
 		});
 
-		const markdown = stateToMarkdown(state);
+		const json = stateToJson(state);
+		const parsed = JSON.parse(json);
 
-		expect(markdown).toContain("---");
-		expect(markdown).toContain("active: true");
-		expect(markdown).toContain("iteration: 1");
-		expect(markdown).toContain("min_iterations: 1");
-		expect(markdown).toContain("max_iterations: 5");
-		expect(markdown).toContain("completion_promise: COMPLETE");
-		expect(markdown).toContain("started_at: 2025-01-08T12:00:00.000Z");
-		expect(markdown).toContain("\n\nMy prompt");
+		// Uses camelCase throughout
+		expect(parsed.active).toBe(true);
+		expect(parsed.iteration).toBe(1);
+		expect(parsed.minIterations).toBe(1);
+		expect(parsed.maxIterations).toBe(5);
+		expect(parsed.completionPromise).toBe("COMPLETE");
+		expect(parsed.startedAt).toBe("2025-01-08T12:00:00.000Z");
+		expect(parsed.prompt).toBe("My prompt");
 	});
 
-	test("throws on invalid format", () => {
-		expect(() => stateFromMarkdown("no frontmatter")).toThrow();
-		expect(() => stateFromMarkdown("---\n---")).toThrow();
+	test("throws on invalid JSON", () => {
+		expect(() => stateFromJson("not valid json")).toThrow();
+		expect(() => stateFromJson("{incomplete")).toThrow();
+	});
+
+	test("throws on valid JSON with invalid schema", () => {
+		expect(() => stateFromJson('{"foo": "bar"}')).toThrow();
+		expect(() => stateFromJson("{}")).toThrow();
 	});
 });
 
@@ -534,7 +551,7 @@ describe("extractRalphFeedback", () => {
 	});
 });
 
-describe("stateToMarkdown / stateFromMarkdown with previousFeedback", () => {
+describe("stateToJson / stateFromJson with previousFeedback", () => {
 	test("round-trips state with previousFeedback", () => {
 		const original = LoopStateSchema.parse({
 			active: true,
@@ -554,8 +571,8 @@ describe("stateToMarkdown / stateFromMarkdown with previousFeedback", () => {
 			},
 		});
 
-		const markdown = stateToMarkdown(original);
-		const parsed = stateFromMarkdown(markdown);
+		const json = stateToJson(original);
+		const parsed = stateFromJson(json);
 
 		expect(parsed.previousFeedback).toBeDefined();
 		expect(parsed.previousFeedback?.qualityScore).toBe(7);
@@ -576,13 +593,13 @@ describe("stateToMarkdown / stateFromMarkdown with previousFeedback", () => {
 			prompt: "First iteration",
 		});
 
-		const markdown = stateToMarkdown(original);
-		const parsed = stateFromMarkdown(markdown);
+		const json = stateToJson(original);
+		const parsed = stateFromJson(json);
 
 		expect(parsed.previousFeedback).toBeUndefined();
 	});
 
-	test("serializes previous_feedback in snake_case", () => {
+	test("serializes previousFeedback in camelCase", () => {
 		const state = LoopStateSchema.parse({
 			prompt: "Test",
 			previousFeedback: {
@@ -592,11 +609,12 @@ describe("stateToMarkdown / stateFromMarkdown with previousFeedback", () => {
 			},
 		});
 
-		const markdown = stateToMarkdown(state);
+		const json = stateToJson(state);
+		const parsed = JSON.parse(json);
 
-		expect(markdown).toContain("previous_feedback:");
-		expect(markdown).toContain("quality_score: 8");
-		expect(markdown).toContain("quality_summary: Good work");
-		expect(markdown).toContain("next_steps:");
+		// Uses camelCase throughout
+		expect(parsed.previousFeedback.qualityScore).toBe(8);
+		expect(parsed.previousFeedback.qualitySummary).toBe("Good work");
+		expect(parsed.previousFeedback.nextSteps).toEqual(["Next step"]);
 	});
 });

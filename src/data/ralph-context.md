@@ -12,19 +12,19 @@ This is a self-referential loop where:
 
 ## Current State
 
-Read `.kiro/ralph-loop.local.md` for:
+Read `.kiro/ralph-loop.local.json` for the loop state as a JSON object:
 - `iteration`: Current iteration number
-- `min_iterations`: Minimum iterations required before completion is accepted
-- `max_iterations`: When the loop will stop (0=unlimited)
-- `completion_promise`: Phrase to output when done
-- `previous_feedback`: Structured feedback from your last iteration (if any)
-  - `quality_score`: Self-assessment 1-10
-  - `quality_summary`: Brief summary of work quality
+- `minIterations`: Minimum iterations required before completion is accepted
+- `maxIterations`: When the loop will stop (0=unlimited)
+- `completionPromise`: Phrase to output when done
+- `prompt`: The task prompt for the loop
+- `previousFeedback`: Structured feedback from your last iteration (if any)
+  - `qualityScore`: Self-assessment 1-10
+  - `qualitySummary`: Brief summary of work quality
   - `improvements`: Areas for improvement
-  - `next_steps`: Planned next actions
+  - `nextSteps`: Planned next actions
   - `ideas`: Creative ideas for the project
   - `blockers`: Issues blocking progress
-- The task prompt is after the YAML frontmatter (after the second `---`)
 
 ## Your Task
 
@@ -36,7 +36,7 @@ Read `.kiro/ralph-loop.local.md` for:
 ## Minimum Iterations
 
 The loop enforces a minimum number of iterations before accepting completion:
-- If `iteration < min_iterations`: Your promise tag will be IGNORED
+- If `iteration < minIterations`: Your promise tag will be IGNORED
 - Use early iterations to build incrementally, test, and refine
 - Don't rush to completion - each iteration is an opportunity to improve
 
@@ -48,13 +48,13 @@ To signal completion, you MUST output the exact completion promise wrapped in pr
 <promise>YOUR_COMPLETION_PHRASE</promise>
 ```
 
-Replace `YOUR_COMPLETION_PHRASE` with the exact phrase from the state file's `completion_promise` field.
+Replace `YOUR_COMPLETION_PHRASE` with the exact phrase from the state file's `completionPromise` field.
 
 ## CRITICAL RULES
 
 - **ONLY** output the promise tag when the task is **TRULY** complete
-- **WAIT** until you've reached `min_iterations` before signaling completion
-- **Do NOT** output the promise tag on iteration 1 unless min_iterations is 1
+- **WAIT** until you've reached `minIterations` before signaling completion
+- **Do NOT** output the promise tag on iteration 1 unless minIterations is 1
 - **Do NOT** lie to escape the loop - false promises violate the core principle
 - **Each iteration is a fresh session** - rely on file/git state for context
 - **Trust the process** - use every iteration productively
@@ -118,4 +118,4 @@ At the END of EVERY iteration, output structured feedback using this XML format:
 - Use `-` or `*` for bullet points in lists
 - Be honest in quality assessment - this helps future iterations
 - Include relevant sections only (skip empty sections)
-- Feedback persists to the next iteration via `previous_feedback` in state file
+- Feedback persists to the next iteration via `previousFeedback` in state file
