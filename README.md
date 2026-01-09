@@ -52,7 +52,7 @@ flowchart LR
 | Language | TypeScript | Type-safe development |
 | CLI Framework | [Commander](https://github.com/tj/commander.js) | Command-line interface parsing |
 | Data Validation | [Zod](https://zod.dev/) | Schema validation |
-| Configuration | [yaml](https://github.com/eemeli/yaml) | YAML frontmatter parsing |
+| Configuration | JSON | State file serialization |
 | Terminal UI | [@clack/prompts](https://github.com/natemoo-re/clack) + [picocolors](https://github.com/alexeyraspopov/picocolors) | Interactive prompts and colored output |
 | Database | [bun:sqlite](https://bun.sh/docs/api/sqlite) | Session reading from Kiro CLI |
 | Task Runner | [mise](https://mise.jdx.dev/) | Development task automation |
@@ -70,17 +70,22 @@ ralph-wiggum/
 │   ├── index.ts              # CLI entry point
 │   ├── version.ts            # Version export
 │   ├── commands/             # CLI command implementations
+│   │   ├── index.ts          # Command exports
 │   │   ├── init.ts           # Initialize Ralph in a project
 │   │   ├── loop.ts           # Start an iterative loop
 │   │   └── cancel.ts         # Cancel an active loop
 │   ├── core/                 # Core business logic
+│   │   ├── index.ts          # Core exports
 │   │   ├── loop-runner.ts    # Main loop orchestration
 │   │   ├── kiro-client.ts    # Kiro CLI subprocess wrapper
 │   │   └── session-reader.ts # SQLite session reader
 │   ├── schemas/              # Zod schemas
+│   │   ├── index.ts          # Schema exports
 │   │   ├── config.ts         # Loop configuration
-│   │   ├── state.ts          # Loop state (markdown serialization)
+│   │   ├── state.ts          # Loop state (JSON serialization)
 │   │   └── session.ts        # Kiro session parsing
+│   ├── types/                # TypeScript declarations
+│   │   └── text.d.ts         # Text file import types
 │   ├── utils/                # Utility functions
 │   │   └── paths.ts          # Path helpers
 │   └── data/                 # Bundled template files
@@ -145,7 +150,7 @@ sequenceDiagram
     Ralph CLI->>LoopRunner: runLoop(config)
 
     loop Each Iteration
-        LoopRunner->>LoopRunner: Write state to<br/>.kiro/ralph-loop.local.md
+        LoopRunner->>LoopRunner: Write state to<br/>.kiro/ralph-loop.local.json
         LoopRunner->>KiroClient: runChat()
         KiroClient->>Kiro CLI: subprocess call
         Kiro CLI->>Kiro CLI: Agent works on task
@@ -279,36 +284,39 @@ ralph cancel
 
 ### 1. State File
 
-Loop state is stored in `.kiro/ralph-loop.local.md` with YAML frontmatter:
+Loop state is stored in `.kiro/ralph-loop.local.json` as JSON:
 
-```yaml
----
-active: true
-iteration: 3
-min_iterations: 2
-max_iterations: 20
-completion_promise: COMPLETE
-started_at: '2026-01-07T12:00:00Z'
-previous_feedback:
-  quality_score: 7
-  quality_summary: Good progress on API endpoints
-  improvements:
-    - Add input validation
-    - Increase test coverage
-  next_steps:
-    - Implement validation middleware
-    - Write integration tests
-  ideas:
-    - Consider adding rate limiting
-  blockers: []
----
-
-Build a REST API with CRUD operations...
+```json
+{
+  "active": true,
+  "iteration": 3,
+  "minIterations": 2,
+  "maxIterations": 20,
+  "completionPromise": "COMPLETE",
+  "startedAt": "2026-01-07T12:00:00.000Z",
+  "prompt": "Build a REST API with CRUD operations...",
+  "previousFeedback": {
+    "qualityScore": 7,
+    "qualitySummary": "Good progress on API endpoints",
+    "improvements": [
+      "Add input validation",
+      "Increase test coverage"
+    ],
+    "nextSteps": [
+      "Implement validation middleware",
+      "Write integration tests"
+    ],
+    "ideas": [
+      "Consider adding rate limiting"
+    ],
+    "blockers": []
+  }
+}
 ```
 
 The agent reads this file to understand:
 - Current iteration number
-- When it's allowed to complete (after `min_iterations`)
+- When it's allowed to complete (after `minIterations`)
 - The completion phrase to output
 - Feedback from the previous iteration (for continuity)
 
@@ -373,10 +381,10 @@ After running `ralph init`, your project will have:
 your-project/
 └── .kiro/
     ├── agents/
-    │   └── ralph-wiggum.json   # Kiro agent config
+    │   └── ralph-wiggum.json    # Kiro agent config
     ├── steering/
-    │   └── ralph-context.md    # Agent steering context
-    └── ralph-loop.local.md     # Loop state (created during loop)
+    │   └── ralph-context.md     # Agent steering context
+    └── ralph-loop.local.json    # Loop state (created during loop)
 ```
 
 ## Development
