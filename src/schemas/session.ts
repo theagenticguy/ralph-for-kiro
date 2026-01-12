@@ -158,32 +158,48 @@ function sanitizeText(text: string): string {
 }
 
 /**
- * Escapes special regex characters in a string.
- * @param str - The string to escape
- * @returns The escaped string safe for use in RegExp
- */
-function escapeRegExp(str: string): string {
-	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * Extracts content between XML-like tags.
+ * Extracts content between XML-like tags using string-based parsing.
+ * Avoids RegExp construction with user input to prevent ReDoS attacks.
  * @param text - The text to search in
- * @param tagName - The tag name to look for (will be escaped for regex safety)
+ * @param tagName - The tag name to look for (validated for safety)
  * @returns The content between tags, or null if not found
  */
 export function extractTagContent(
 	text: string,
 	tagName: string,
 ): string | null {
-	// Escape tagName to prevent ReDoS attacks from special regex characters
-	const escapedTag = escapeRegExp(tagName);
-	const pattern = new RegExp(
-		`<${escapedTag}>([\\s\\S]*?)</${escapedTag}>`,
-		"i",
-	);
-	const match = text.match(pattern);
-	const content = match?.[1]?.trim() ?? null;
+	// Validate tagName to prevent abuse
+	// Only allow alphanumeric, hyphens, underscores (common XML/HTML tag patterns)
+	if (!/^[a-zA-Z0-9_-]+$/.test(tagName)) {
+		return null;
+	}
+
+	// Limit tag name length to prevent abuse
+	if (tagName.length > 100) {
+		return null;
+	}
+
+	// Use string-based parsing instead of dynamic RegExp to avoid ReDoS
+	// Search for opening tag (case-insensitive)
+	const lowerText = text.toLowerCase();
+	const lowerTagName = tagName.toLowerCase();
+	const openTag = `<${lowerTagName}>`;
+	const closeTag = `</${lowerTagName}>`;
+
+	const startIdx = lowerText.indexOf(openTag);
+	if (startIdx === -1) {
+		return null;
+	}
+
+	const contentStart = startIdx + openTag.length;
+	const endIdx = lowerText.indexOf(closeTag, contentStart);
+	if (endIdx === -1) {
+		return null;
+	}
+
+	// Extract content using original text (not lowercased) to preserve case
+	const content = text.substring(contentStart, endIdx).trim();
+
 	// Sanitize to remove any binary/control characters
 	return content ? sanitizeText(content) : null;
 }
