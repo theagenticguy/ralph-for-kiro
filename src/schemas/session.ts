@@ -158,16 +158,30 @@ function sanitizeText(text: string): string {
 }
 
 /**
+ * Escapes special regex characters in a string.
+ * @param str - The string to escape
+ * @returns The escaped string safe for use in RegExp
+ */
+function escapeRegExp(str: string): string {
+	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Extracts content between XML-like tags.
  * @param text - The text to search in
- * @param tagName - The tag name to look for
+ * @param tagName - The tag name to look for (will be escaped for regex safety)
  * @returns The content between tags, or null if not found
  */
 export function extractTagContent(
 	text: string,
 	tagName: string,
 ): string | null {
-	const pattern = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, "i");
+	// Escape tagName to prevent ReDoS attacks from special regex characters
+	const escapedTag = escapeRegExp(tagName);
+	const pattern = new RegExp(
+		`<${escapedTag}>([\\s\\S]*?)</${escapedTag}>`,
+		"i",
+	);
 	const match = text.match(pattern);
 	const content = match?.[1]?.trim() ?? null;
 	// Sanitize to remove any binary/control characters
