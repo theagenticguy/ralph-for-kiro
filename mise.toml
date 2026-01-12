@@ -8,7 +8,7 @@ run = "bun run src/index.ts"
 
 [tasks.build]
 description = "Build the CLI binary"
-run = "bun build src/index.ts --compile --outfile ralph"
+run = "bun build src/index.ts --compile --outfile ralph-for-kiro"
 
 [tasks.test]
 alias = "t"
