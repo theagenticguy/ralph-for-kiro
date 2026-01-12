@@ -205,6 +205,9 @@ export function extractTagContent(
 
 	for (let i = 0; i < tagName.length; i++) {
 		const char = tagName[i];
+		if (char === undefined) {
+			return null;
+		}
 		const isValid =
 			(char >= "a" && char <= "z") ||
 			(char >= "A" && char <= "Z") ||
