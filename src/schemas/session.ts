@@ -12,9 +12,9 @@ import { z } from "zod";
 export const HistoryTurnSchema = z
 	.object({
 		/** User message in the turn (optional) */
-		user: z.record(z.unknown()).nullable().optional(),
+		user: z.record(z.string(), z.unknown()).nullable().optional(),
 		/** Assistant response in the turn (optional) */
-		assistant: z.record(z.unknown()).nullable().optional(),
+		assistant: z.record(z.string(), z.unknown()).nullable().optional(),
 	})
 	.passthrough();
 

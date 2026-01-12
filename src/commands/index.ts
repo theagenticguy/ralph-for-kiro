@@ -4,6 +4,6 @@
  * @module commands
  */
 
+export { cancelCommand } from "./cancel";
 export { initCommand } from "./init";
 export { loopCommand } from "./loop";
-export { cancelCommand } from "./cancel";

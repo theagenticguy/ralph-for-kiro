@@ -1,3 +1,19 @@
+> [!CAUTION]
+> Unofficial, unsupported CLI implementing fully autonomous agent loops with --allow-all-tools (== `--dangerously-skip-permissions` but for Kiro CLI)
+
+## Disclaimer
+
+I'm an AWS employee.
+This is not an official AWS project or service.
+This may not be maintained.
+This project uses fully autonomous agent loops.
+You may not hold anyone responsible for any sort of damages or unintended or intended consequences.
+The CLI and source code is provided AS IS without warranty or services.
+
+**User discretion advised.**
+
+---
+
 # Ralph Wiggum for Kiro CLI
 
 Implementation of the [Ralph Wiggum technique](https://ghuntley.com/ralph/) for iterative, self-referential AI development loops in Kiro CLI.
@@ -545,4 +561,4 @@ Ralph embodies several key principles:
 
 ## License
 
-MIT
+Apache 2.0

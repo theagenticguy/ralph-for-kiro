@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { LoopConfigSchema } from "../src/schemas/config.ts";
 import {
-	KiroSessionSchema,
 	checkCompletionPromise,
 	extractRalphFeedback,
 	extractTagContent,
 	getAssistantText,
 	getLastAssistantText,
+	KiroSessionSchema,
 	parseBulletList,
 } from "../src/schemas/session.ts";
 import {

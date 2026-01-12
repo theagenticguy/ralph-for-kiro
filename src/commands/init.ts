@@ -7,12 +7,10 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { log } from "@clack/prompts";
 import pc from "picocolors";
-
-import { KIRO_AGENTS_DIR, KIRO_STEERING_DIR } from "../utils/paths";
-
 import steeringContent from "../data/ralph-context.md" with { type: "text" };
 // Import bundled data files
 import agentConfig from "../data/ralph-wiggum.json";
+import { KIRO_AGENTS_DIR, KIRO_STEERING_DIR } from "../utils/paths";
 
 /**
  * Options for the init command.
