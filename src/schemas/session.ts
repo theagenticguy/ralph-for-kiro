@@ -158,18 +158,85 @@ function sanitizeText(text: string): string {
 }
 
 /**
- * Extracts content between XML-like tags.
+ * Case-insensitive string search helper.
  * @param text - The text to search in
- * @param tagName - The tag name to look for
+ * @param searchStr - The string to search for
+ * @param startIndex - The index to start searching from
+ * @returns The index where searchStr is found, or -1 if not found
+ */
+function indexOfCaseInsensitive(
+	text: string,
+	searchStr: string,
+	startIndex = 0,
+): number {
+	const lowerSearchStr = searchStr.toLowerCase();
+	const textLen = text.length;
+	const searchLen = searchStr.length;
+
+	for (let i = startIndex; i <= textLen - searchLen; i++) {
+		let match = true;
+		for (let j = 0; j < searchLen; j++) {
+			if (text[i + j]?.toLowerCase() !== lowerSearchStr[j]) {
+				match = false;
+				break;
+			}
+		}
+		if (match) return i;
+	}
+	return -1;
+}
+
+/**
+ * Extracts content between XML-like tags using string-based parsing.
+ * Avoids RegExp construction with user input to prevent ReDoS attacks.
+ * @param text - The text to search in
+ * @param tagName - The tag name to look for (validated for safety)
  * @returns The content between tags, or null if not found
  */
 export function extractTagContent(
 	text: string,
 	tagName: string,
 ): string | null {
-	const pattern = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`, "i");
-	const match = text.match(pattern);
-	const content = match?.[1]?.trim() ?? null;
+	// Validate tagName character by character to avoid even simple regex
+	// Only allow alphanumeric, hyphens, underscores (common XML/HTML tag patterns)
+	if (tagName.length === 0 || tagName.length > 100) {
+		return null;
+	}
+
+	for (let i = 0; i < tagName.length; i++) {
+		const char = tagName[i];
+		if (char === undefined) {
+			return null;
+		}
+		const isValid =
+			(char >= "a" && char <= "z") ||
+			(char >= "A" && char <= "Z") ||
+			(char >= "0" && char <= "9") ||
+			char === "_" ||
+			char === "-";
+		if (!isValid) {
+			return null;
+		}
+	}
+
+	// Use string-based parsing with case-insensitive search
+	const openTag = `<${tagName}>`;
+	const closeTag = `</${tagName}>`;
+
+	const startIdx = indexOfCaseInsensitive(text, openTag);
+	if (startIdx === -1) {
+		return null;
+	}
+
+	const contentStart = startIdx + openTag.length;
+	const endIdx = indexOfCaseInsensitive(text, closeTag, contentStart);
+	if (endIdx === -1) {
+		return null;
+	}
+
+	// Extract content from original text to preserve case
+	const content = text.substring(contentStart, endIdx).trim();
+
 	// Sanitize to remove any binary/control characters
 	return content ? sanitizeText(content) : null;
 }
