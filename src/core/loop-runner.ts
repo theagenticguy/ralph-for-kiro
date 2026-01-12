@@ -10,9 +10,9 @@ import pc from "picocolors";
 
 import type { LoopConfig } from "../schemas/config";
 import {
-	type RalphFeedback,
 	checkCompletionPromise,
 	extractRalphFeedback,
+	type RalphFeedback,
 } from "../schemas/session";
 import { type LoopState, stateToJson } from "../schemas/state";
 import { STATE_FILE } from "../utils/paths";
