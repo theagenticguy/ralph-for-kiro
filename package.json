@@ -1,6 +1,6 @@
 {
   "name": "ralph-wiggum",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Ralph Wiggum iterative loop technique for Kiro CLI",
   "type": "module",
   "bin": {
