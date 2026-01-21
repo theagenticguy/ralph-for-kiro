@@ -241,6 +241,13 @@ The agent will:
 3. Continue until it outputs `<promise>COMPLETE</promise>`
 4. Or stop when max iterations is reached
 
+If the loop is interrupted or you want to continue after it stops:
+
+```bash
+# Resume the loop with context about previous work
+ralph resume
+```
+
 ## Commands
 
 ### `ralph init`
@@ -288,13 +295,67 @@ ralph loop "Add input validation" -p "VALIDATION COMPLETE" -n 3 -m 20
 ralph loop "Build feature X" -a ./my-agent.json -m 15
 ```
 
+### `ralph resume`
+
+Resume a stopped Ralph loop with context about previous work.
+
+```bash
+ralph resume [OPTIONS]
+```
+
+**Options:**
+- `--min-iterations, -n` - Override minimum iterations before accepting completion
+- `--max-iterations, -m` - Override max iterations before auto-stop
+- `--completion-promise, -p` - Override phrase that signals completion
+- `--agent, -a` - Override agent name
+
+**How it works:**
+
+When you resume a stopped loop, Ralph will:
+1. Read the existing state file (`.kiro/ralph-loop.local.json`)
+2. Extract information about previous work and feedback
+3. Build an enhanced prompt with resume context that instructs the agent to:
+   - Review files that were created or modified
+   - Check git history to see what was accomplished
+   - Review previous feedback (quality score, next steps, improvements, blockers)
+4. Continue the loop from where it left off
+
+**Examples:**
+
+```bash
+# Resume with existing settings
+ralph resume
+
+# Resume but increase max iterations
+ralph resume -m 30
+
+# Resume with a different completion promise
+ralph resume -p "FINISHED"
+
+# Resume with all settings overridden
+ralph resume -n 5 -m 25 -p "DONE"
+```
+
+**Use cases:**
+- Loop was interrupted (Ctrl+C)
+- Hit max iterations but want to continue
+- Need to adjust iteration limits
+- Want the agent to re-evaluate with fresh context
+
 ### `ralph cancel`
 
-Cancel an active Ralph loop.
+Cancel an active Ralph loop and preserve state for resume.
 
 ```bash
 ralph cancel
 ```
+
+**What it does:**
+- Marks the loop as inactive (doesn't delete the state)
+- Preserves current iteration and feedback
+- Allows you to resume later with `ralph resume`
+
+**Note:** When a loop completes successfully (outputs the completion promise), the state is deleted automatically. When interrupted (Ctrl+C) or max iterations reached, the state is preserved for resume.
 
 ## How It Works
 
@@ -555,6 +616,7 @@ Ralph embodies several key principles:
 
 ## Learn More
 
+- [Resume Feature Implementation Guide](RESUME_IMPLEMENTATION.md) - Complete documentation on the resume feature and state preservation
 - [Original technique by Geoffrey Huntley](https://ghuntley.com/ralph/)
 - [Ralph Orchestrator](https://github.com/mikeyobrien/ralph-orchestrator)
 - [Kiro CLI Documentation](https://kiro.dev/docs/cli/)
