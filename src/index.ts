@@ -1,12 +1,17 @@
 #!/usr/bin/env bun
 /**
  * @fileoverview CLI entry point for Ralph Wiggum, an iterative loop technique for Kiro CLI.
- * Registers commands: init, loop, and cancel.
+ * Registers commands: init, loop, resume, and cancel.
  * @module ralph-wiggum
  */
 import { Command } from "commander";
 
-import { cancelCommand, initCommand, loopCommand } from "./commands";
+import {
+	cancelCommand,
+	initCommand,
+	loopCommand,
+	resumeCommand,
+} from "./commands";
 import { VERSION } from "./version";
 
 const program = new Command()
@@ -49,5 +54,24 @@ program
 	.command("cancel")
 	.description("Cancel an active Ralph loop")
 	.action(cancelCommand);
+
+// Resume command
+program
+	.command("resume")
+	.description("Resume a stopped Ralph loop with context about previous work")
+	.option(
+		"-n, --min-iterations <number>",
+		"Override minimum iterations before checking completion",
+	)
+	.option(
+		"-m, --max-iterations <number>",
+		"Override maximum iterations (0 = unlimited)",
+	)
+	.option(
+		"-p, --completion-promise <string>",
+		"Override promise phrase to signal completion",
+	)
+	.option("-a, --agent <name>", "Agent name (default: ralph-wiggum)")
+	.action(resumeCommand);
 
 program.parse();

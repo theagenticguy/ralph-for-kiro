@@ -43,4 +43,25 @@ describe("CLI", () => {
 		expect(output).toContain("--completion-promise");
 		expect(output).toContain("--agent");
 	});
+
+	test("--help shows resume command", async () => {
+		const proc = Bun.spawn(["bun", "run", "src/index.ts", "--help"], {
+			stdout: "pipe",
+		});
+		const output = await new Response(proc.stdout).text();
+		await proc.exited;
+		expect(output).toContain("resume");
+	});
+
+	test("resume --help shows all options", async () => {
+		const proc = Bun.spawn(["bun", "run", "src/index.ts", "resume", "--help"], {
+			stdout: "pipe",
+		});
+		const output = await new Response(proc.stdout).text();
+		await proc.exited;
+		expect(output).toContain("--min-iterations");
+		expect(output).toContain("--max-iterations");
+		expect(output).toContain("--completion-promise");
+		expect(output).toContain("--agent");
+	});
 });
