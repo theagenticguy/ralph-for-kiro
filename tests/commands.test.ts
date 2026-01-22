@@ -248,14 +248,11 @@ describe("resume command", () => {
 		);
 
 		// Override minIterations via CLI
-		const proc = Bun.spawn(
-			["bun", "run", indexPath, "resume", "-n", "5"],
-			{
-				cwd: testDir,
-				stdout: "pipe",
-				stderr: "pipe",
-			},
-		);
+		const proc = Bun.spawn(["bun", "run", indexPath, "resume", "-n", "5"], {
+			cwd: testDir,
+			stdout: "pipe",
+			stderr: "pipe",
+		});
 		const output = await new Response(proc.stdout).text();
 		await proc.exited;
 
@@ -284,14 +281,11 @@ describe("resume command", () => {
 		);
 
 		// Override maxIterations via CLI
-		const proc = Bun.spawn(
-			["bun", "run", indexPath, "resume", "-m", "20"],
-			{
-				cwd: testDir,
-				stdout: "pipe",
-				stderr: "pipe",
-			},
-		);
+		const proc = Bun.spawn(["bun", "run", indexPath, "resume", "-m", "20"], {
+			cwd: testDir,
+			stdout: "pipe",
+			stderr: "pipe",
+		});
 		const output = await new Response(proc.stdout).text();
 		await proc.exited;
 
@@ -386,14 +380,11 @@ describe("resume command", () => {
 		);
 
 		// Try to override with invalid value (negative)
-		const proc = Bun.spawn(
-			["bun", "run", indexPath, "resume", "-n", "-1"],
-			{
-				cwd: testDir,
-				stdout: "pipe",
-				stderr: "pipe",
-			},
-		);
+		const proc = Bun.spawn(["bun", "run", indexPath, "resume", "-n", "-1"], {
+			cwd: testDir,
+			stdout: "pipe",
+			stderr: "pipe",
+		});
 		const output = await new Response(proc.stdout).text();
 		const stderr = await new Response(proc.stderr).text();
 		const exitCode = await proc.exited;
@@ -424,14 +415,11 @@ describe("resume command", () => {
 		);
 
 		// Try to override with invalid value (negative)
-		const proc = Bun.spawn(
-			["bun", "run", indexPath, "resume", "-m", "-5"],
-			{
-				cwd: testDir,
-				stdout: "pipe",
-				stderr: "pipe",
-			},
-		);
+		const proc = Bun.spawn(["bun", "run", indexPath, "resume", "-m", "-5"], {
+			cwd: testDir,
+			stdout: "pipe",
+			stderr: "pipe",
+		});
 		const output = await new Response(proc.stdout).text();
 		const stderr = await new Response(proc.stderr).text();
 		const exitCode = await proc.exited;

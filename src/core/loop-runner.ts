@@ -78,7 +78,9 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 	}
 
 	// Display startup info
-	const loopType = config.isResume ? "Ralph loop resuming" : "Ralph loop starting";
+	const loopType = config.isResume
+		? "Ralph loop resuming"
+		: "Ralph loop starting";
 	log.info(pc.bold(pc.blue(loopType)));
 	log.message(`   Min iterations: ${config.minIterations}`);
 	log.message(`   Max iterations: ${config.maxIterations || "unlimited"}`);

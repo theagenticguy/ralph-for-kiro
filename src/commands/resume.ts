@@ -156,7 +156,10 @@ function buildResumeContext(state: ReturnType<typeof stateFromJson>): string {
 			}
 		}
 
-		if (state.previousFeedback.ideas && state.previousFeedback.ideas.length > 0) {
+		if (
+			state.previousFeedback.ideas &&
+			state.previousFeedback.ideas.length > 0
+		) {
 			lines.push("   Ideas to consider:");
 			for (const idea of state.previousFeedback.ideas) {
 				lines.push(`   - ${idea}`);
@@ -167,7 +170,9 @@ function buildResumeContext(state: ReturnType<typeof stateFromJson>): string {
 	}
 
 	lines.push("");
-	lines.push("3. Continue working toward completion of the original task below.");
+	lines.push(
+		"3. Continue working toward completion of the original task below.",
+	);
 	lines.push("");
 
 	return lines.join("\n");
