@@ -8,7 +8,7 @@ import pc from "picocolors";
 
 import { runLoop } from "../core/loop-runner";
 import { LoopConfigSchema } from "../schemas/config";
-import { stateFromJson } from "../schemas/state";
+import { type LoopState, stateFromJson } from "../schemas/state";
 import { STATE_FILE } from "../utils/paths";
 
 /**
@@ -47,7 +47,7 @@ export async function resumeCommand(opts: ResumeOptions): Promise<void> {
 	}
 
 	// Read and parse the existing state
-	let existingState;
+	let existingState: LoopState;
 	try {
 		const content = await stateFile.text();
 		existingState = stateFromJson(content);

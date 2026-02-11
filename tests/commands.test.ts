@@ -346,6 +346,9 @@ describe("resume command", () => {
 		);
 
 		// Override agent via CLI
+		// With -a, the KiroClient skips the default agent config check and
+		// proceeds to spawn kiro-cli, which may hang. We collect output
+		// incrementally and kill the process once we see what we need.
 		const proc = Bun.spawn(
 			["bun", "run", indexPath, "resume", "-a", "custom-agent"],
 			{
@@ -354,11 +357,36 @@ describe("resume command", () => {
 				stderr: "pipe",
 			},
 		);
-		const output = await new Response(proc.stdout).text();
-		await proc.exited;
+
+		let output = "";
+		const decoder = new TextDecoder();
+		const reader = proc.stdout.getReader();
+
+		try {
+			const deadline = Date.now() + 5000;
+			while (Date.now() < deadline) {
+				const result = await Promise.race([
+					reader.read(),
+					Bun.sleep(deadline - Date.now()).then(() => ({
+						done: true as const,
+						value: undefined,
+					})),
+				]);
+				if (result.value) {
+					output += decoder.decode(result.value);
+				}
+				if (result.done || output.includes("Resuming Ralph loop")) {
+					break;
+				}
+			}
+		} finally {
+			reader.releaseLock();
+			proc.kill(9);
+			await proc.exited;
+		}
 
 		expect(output).toContain("Resuming Ralph loop");
-	});
+	}, 15000);
 
 	test("handles validation error for invalid minIterations", async () => {
 		const kiroDir = join(testDir, ".kiro");

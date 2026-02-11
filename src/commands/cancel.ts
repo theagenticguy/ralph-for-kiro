@@ -6,7 +6,7 @@
 import { unlink } from "node:fs/promises";
 import { log } from "@clack/prompts";
 
-import { stateFromJson } from "../schemas/state";
+import { type LoopState, stateFromJson } from "../schemas/state";
 import { SESSION_FILE, STATE_FILE } from "../utils/paths";
 
 /**
@@ -23,7 +23,7 @@ export async function cancelCommand(): Promise<void> {
 	}
 
 	// Read and parse the existing state
-	let state;
+	let state: LoopState;
 	let iteration: number | string = "?";
 	try {
 		const content = await stateFile.text();
