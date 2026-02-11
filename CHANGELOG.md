@@ -1,5 +1,34 @@
 # Changelog
 
+## [Unreleased]
+
+### Features
+
+* **resume:** add `ralph resume` command for resuming interrupted loops
+  - Resume stopped loops with full context about previous work
+  - Override loop parameters (min/max iterations, completion promise, agent)
+  - Enhanced prompt with instructions to review files, git history, and feedback
+  - Displays previous iteration number and quality score
+
+### Bug Fixes
+
+* **state:** preserve state on interruption instead of deleting
+  - Ctrl+C (SIGINT) now saves state with iteration and feedback
+  - Max iterations reached saves state for continuation
+  - `ralph cancel` marks state inactive instead of deleting
+  - Only delete state on successful task completion
+
+### Changes
+
+* **cancel:** `ralph cancel` now preserves state for resume instead of deleting
+* **loop-runner:** enhanced cleanup function to preserve state with iteration/feedback
+* **schema:** added `isResume` and `resumeFromIteration` fields to LoopConfig
+
+### Documentation
+
+* **resume:** added comprehensive RESUME_IMPLEMENTATION.md guide
+* **readme:** updated with resume command documentation and state preservation notes
+
 ## 1.0.0 (2026-01-12)
 
 

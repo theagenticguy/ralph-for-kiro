@@ -6,12 +6,12 @@
 import { unlink } from "node:fs/promises";
 import { log } from "@clack/prompts";
 
-import { stateFromJson } from "../schemas/state";
+import { type LoopState, stateFromJson } from "../schemas/state";
 import { SESSION_FILE, STATE_FILE } from "../utils/paths";
 
 /**
  * Cancels an active Ralph Wiggum loop.
- * Removes the state file and session file from the .ralph directory.
+ * Marks the state as inactive so it can be resumed later.
  * @returns Resolves when cancellation is complete
  */
 export async function cancelCommand(): Promise<void> {
@@ -22,21 +22,29 @@ export async function cancelCommand(): Promise<void> {
 		return;
 	}
 
-	// Try to get iteration number for display
+	// Read and parse the existing state
+	let state: LoopState;
 	let iteration: number | string = "?";
 	try {
 		const content = await stateFile.text();
-		const state = stateFromJson(content);
+		state = stateFromJson(content);
 		iteration = state.iteration;
 	} catch {
-		// Ignore parse errors, just show "?"
+		// If we can't parse the state, just delete it
+		await unlink(STATE_FILE).catch(() => {});
+		log.message("Cancelled Ralph loop (invalid state file)");
+		return;
 	}
 
-	// Delete state files
-	await Promise.all([
-		unlink(STATE_FILE).catch(() => {}),
-		unlink(SESSION_FILE).catch(() => {}),
-	]);
+	// Mark state as inactive (preserves for resume)
+	state.active = false;
 
-	log.message(`Cancelled Ralph loop (was at iteration ${iteration})`);
+	// Write updated state back
+	await Bun.write(STATE_FILE, JSON.stringify(state));
+
+	// Delete session file (not needed for resume)
+	await unlink(SESSION_FILE).catch(() => {});
+
+	log.message(`Cancelled Ralph loop at iteration ${iteration}`);
+	log.message("Run 'ralph resume' to continue where you left off.");
 }

@@ -23,6 +23,10 @@ export const LoopConfigSchema = z.object({
 		.default("COMPLETE"),
 	/** Optional agent name override. Default: null (uses default agent) */
 	agentName: z.string().nullable().default(null),
+	/** Whether this is a resume operation. Default: false */
+	isResume: z.boolean().default(false),
+	/** Iteration number to resume from. Default: 0 */
+	resumeFromIteration: z.number().int().min(0).default(0),
 });
 
 /**
