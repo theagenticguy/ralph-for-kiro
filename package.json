@@ -20,7 +20,7 @@
   "dependencies": {
     "commander": "^14.0.2",
     "zod": "^4.3.6",
-    "@clack/prompts": "^0.11.0",
+    "@clack/prompts": "^1.0.0",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
