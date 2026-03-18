@@ -635,3 +635,10 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/linux,python,windows,macOS,VisualStudioCode,jetbrains+all,pycharm+all,node,amplify,sam,typescript,vue,idea,terraform,kubernetes,docker
 
 .claude
+
+# Project Watcher
+results/
+watch-manifest.json
+.kiro/settings/mcp.json
+.kiro/ralph-loop.local.json
+.kiro/ralph-session.json

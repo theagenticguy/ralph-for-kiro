@@ -11,6 +11,10 @@ import {
 	initCommand,
 	loopCommand,
 	resumeCommand,
+	watchInitCommand,
+	watchLsCommand,
+	watchResultsCommand,
+	watchRunCommand,
 } from "./commands";
 import { VERSION } from "./version";
 
@@ -73,5 +77,35 @@ program
 	)
 	.option("-a, --agent <name>", "Agent name (default: ralph-wiggum)")
 	.action(resumeCommand);
+
+// Watch command (with subcommands)
+const watchCmd = program
+	.command("watch")
+	.description("Discover trending repos through iterative deep research")
+	.option(
+		"-n, --min-iterations <number>",
+		"Minimum iterations before checking completion",
+		"3",
+	)
+	.option("-m, --max-iterations <number>", "Maximum iterations", "10")
+	.option("-a, --agent <name>", "Agent name override")
+	.action(watchRunCommand);
+
+watchCmd
+	.command("init")
+	.description("Initialize watch configuration (agent, steering, manifest)")
+	.option("-f, --force", "Overwrite existing files")
+	.action(watchInitCommand);
+
+watchCmd
+	.command("results")
+	.description("Show results for a watch run")
+	.argument("[id]", "Task ID (defaults to most recent)")
+	.action(watchResultsCommand);
+
+watchCmd
+	.command("ls")
+	.description("List recent watch runs")
+	.action(watchLsCommand);
 
 program.parse();
