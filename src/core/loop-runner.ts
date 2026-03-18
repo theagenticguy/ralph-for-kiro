@@ -20,23 +20,36 @@ import { KiroClient } from "./kiro-client";
 import { getLatestSession } from "./session-reader";
 
 /**
+ * Result of a loop execution.
+ */
+export interface LoopResult {
+	/** Why the loop ended */
+	reason: "completed" | "max-iterations" | "interrupted";
+	/** Final iteration number */
+	iteration: number;
+	/** Feedback from the last iteration */
+	feedback?: RalphFeedback;
+}
+
+/**
  * Runs the Ralph Wiggum iterative loop.
  * Executes kiro-cli repeatedly until the completion promise is detected
  * or maximum iterations are reached.
  * @param config - Loop configuration with prompt and iteration settings
- * @returns Resolves when the loop completes, is interrupted, or reaches max iterations
+ * @returns The loop result with reason, iteration count, and last feedback
  * @example
  * ```typescript
- * await runLoop({
+ * const result = await runLoop({
  *   prompt: "Build a REST API",
  *   minIterations: 1,
  *   maxIterations: 10,
  *   completionPromise: "DONE",
  *   agentName: null
  * });
+ * console.log(result.reason); // "completed" | "max-iterations"
  * ```
  */
-export async function runLoop(config: LoopConfig): Promise<void> {
+export async function runLoop(config: LoopConfig): Promise<LoopResult> {
 	const client = new KiroClient(config.agentName);
 	const cwd = process.cwd();
 
@@ -170,7 +183,11 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 					log.success(pc.green(`Completed at iteration ${iteration}!`));
 					// Task completed successfully - can delete state
 					await cleanup();
-					process.exit(0);
+					return {
+						reason: "completed",
+						iteration,
+						feedback: previousFeedback,
+					};
 				}
 			} else {
 				log.message(
@@ -186,7 +203,11 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 				log.message("Saving state for resume...");
 				await cleanup(iteration, previousFeedback);
 				log.message("Run 'ralph resume' to continue where you left off.");
-				process.exit(0);
+				return {
+					reason: "max-iterations",
+					iteration,
+					feedback: previousFeedback,
+				};
 			}
 		}
 	} catch (error) {
@@ -195,4 +216,6 @@ export async function runLoop(config: LoopConfig): Promise<void> {
 			throw error;
 		}
 	}
+
+	return { reason: "interrupted", iteration, feedback: previousFeedback };
 }

@@ -8,3 +8,9 @@ export { cancelCommand } from "./cancel";
 export { initCommand } from "./init";
 export { loopCommand } from "./loop";
 export { resumeCommand } from "./resume";
+export {
+	watchInitCommand,
+	watchLsCommand,
+	watchResultsCommand,
+	watchRunCommand,
+} from "./watch";

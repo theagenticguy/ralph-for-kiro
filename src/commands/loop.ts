@@ -53,5 +53,6 @@ export async function loopCommand(
 		process.exit(1);
 	}
 
-	await runLoop(result.data);
+	const loopResult = await runLoop(result.data);
+	process.exit(loopResult.reason === "completed" ? 0 : 0);
 }

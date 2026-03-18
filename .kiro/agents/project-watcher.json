@@ -1,0 +1,20 @@
+{
+  "name": "project-watcher",
+  "description": "Iterative deep research agent for discovering trending GitHub repos matching watched topics and languages",
+  "tools": [
+    "read",
+    "write",
+    "@brave-search",
+    "@tavily",
+    "@exa"
+  ],
+  "allowedTools": [
+    "*"
+  ],
+  "includeMcpJson": true,
+  "resources": [
+    "file://../../watch-manifest.json",
+    "file://../ralph-loop.local.json"
+  ],
+  "prompt": "file://../steering/watcher-context.md"
+}
