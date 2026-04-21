@@ -4,7 +4,7 @@
  * @module core/watch-runner
  */
 import { mkdir, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { log } from "@clack/prompts";
 import pc from "picocolors";
 import { LoopConfigSchema } from "../schemas/config";
@@ -12,10 +12,12 @@ import { type WatchManifest, WatchManifestSchema } from "../schemas/manifest";
 import { type WatchStatus, WatchStatusSchema } from "../schemas/results";
 import {
 	RESULTS_DIR,
+	SCOUTS_DIR,
 	WATCH_AGENT_NAME,
 	WATCH_MANIFEST_FILE,
 } from "../utils/paths";
 import { runLoop } from "./loop-runner";
+import { ensureScoutKiroTree } from "./scout-init";
 
 /**
  * Options for a watch run.
@@ -157,14 +159,33 @@ export async function runWatch(opts: WatchRunOptions): Promise<void> {
 	log.message(`   Iterations: ${opts.minIterations}-${opts.maxIterations}`);
 	console.log();
 
-	// Build the prompt
+	// Build the prompt. For scouts, use an absolute results path so the
+	// agent and hooks write to the correct location regardless of the
+	// subprocess cwd (scouts spawn kiro-cli with cwd=scouts/<name>/).
+	const absResultsPath = isAbsolute(resultsPath)
+		? resultsPath
+		: resolve(process.cwd(), resultsPath);
 	const manifestFilePath = opts.manifestPath ?? WATCH_MANIFEST_FILE;
+	const absManifestPath = isAbsolute(manifestFilePath)
+		? manifestFilePath
+		: resolve(process.cwd(), manifestFilePath);
 	const prompt = buildWatchPrompt(
 		manifest,
 		taskId,
-		resultsPath,
-		manifestFilePath,
+		absResultsPath,
+		absManifestPath,
 	);
+
+	// For scout runs, stamp the per-scout `.kiro/` tree and spawn kiro-cli
+	// with cwd=scouts/<name>/ so Kiro uses that scout's agents/steering/hooks
+	// instead of the repo-root ones. Non-scout watches keep running at the
+	// repo root for backwards compatibility.
+	let scoutCwd: string | null = null;
+	if (opts.scoutName) {
+		const scoutDir = resolve(process.cwd(), SCOUTS_DIR, opts.scoutName);
+		await ensureScoutKiroTree(scoutDir);
+		scoutCwd = scoutDir;
+	}
 
 	// Validate and run the loop
 	const config = LoopConfigSchema.parse({
@@ -173,8 +194,9 @@ export async function runWatch(opts: WatchRunOptions): Promise<void> {
 		maxIterations: opts.maxIterations,
 		completionPromise: "COMPLETE",
 		agentName: opts.agentName ?? WATCH_AGENT_NAME,
-		runDir: resultsPath,
+		runDir: absResultsPath,
 		scoutName: opts.scoutName ?? null,
+		scoutCwd,
 	});
 
 	try {

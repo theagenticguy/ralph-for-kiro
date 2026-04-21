@@ -20,6 +20,19 @@ export interface HookEnv {
 	scoutName?: string;
 }
 
+/** Optional overrides passed per `runChat` invocation. */
+export interface RunChatOptions {
+	/** Hook env vars made available to `.kiro/hooks/*.sh` scripts. */
+	hookEnv?: HookEnv;
+	/**
+	 * Working directory for the spawned kiro-cli subprocess. When set, Kiro
+	 * discovers a sibling `.kiro/` tree here (agents, steering, hooks, MCP
+	 * config, SQLite session history) which is how scout isolation works —
+	 * each scout runs with its own cwd and therefore its own `.kiro/`.
+	 */
+	cwd?: string;
+}
+
 /**
  * Client for interacting with kiro-cli subprocess.
  * Wraps the kiro-cli chat command with the Ralph Wiggum agent.
@@ -55,11 +68,11 @@ export class KiroClient {
 	/**
 	 * Run a kiro-cli chat session.
 	 * @param prompt - The prompt to send to kiro-cli
-	 * @param hookEnv - Optional hook environment (runDir, iteration, scoutName).
+	 * @param options - Optional per-invocation overrides (hook env, cwd).
 	 * @returns Exit code from kiro-cli
 	 */
-	async runChat(prompt: string, hookEnv?: HookEnv): Promise<number> {
-		const env = buildHookEnv(hookEnv);
+	async runChat(prompt: string, options?: RunChatOptions): Promise<number> {
+		const env = buildHookEnv(options?.hookEnv);
 
 		// Pass prompt as positional argument [INPUT], not via stdin
 		const proc = Bun.spawn(
@@ -76,6 +89,7 @@ export class KiroClient {
 				stdout: "inherit", // Show output in real-time
 				stderr: "inherit",
 				env,
+				...(options?.cwd ? { cwd: options.cwd } : {}),
 			},
 		);
 
@@ -92,6 +106,9 @@ export function buildHookEnv(hookEnv?: HookEnv): NodeJS.ProcessEnv {
 	const env: NodeJS.ProcessEnv = { ...process.env };
 	if (!hookEnv) return env;
 
+	// Bracket access required: NodeJS.ProcessEnv is an index-signature type
+	// under TS strict (`noPropertyAccessFromIndexSignature`). Biome's
+	// `useLiteralKeys` is disabled in biome.json to avoid the rule conflict.
 	if (hookEnv.runDir !== undefined) {
 		env["RALPH_RUN_DIR"] = hookEnv.runDir;
 	}
