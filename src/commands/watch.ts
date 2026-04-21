@@ -30,6 +30,8 @@ interface WatchRunOptions {
 	minIterations: string;
 	maxIterations: string;
 	agent?: string;
+	manifest?: string;
+	scout?: string;
 }
 
 /**
@@ -60,6 +62,8 @@ export async function watchRunCommand(opts: WatchRunOptions): Promise<void> {
 		minIterations,
 		maxIterations,
 		agentName: opts.agent ?? null,
+		manifestPath: opts.manifest ?? null,
+		scoutName: opts.scout ?? null,
 	});
 }
 

@@ -1,0 +1,31 @@
+{
+	"version": "1.0",
+	"topics": ["browser-automation", "computer-use", "desktop-agents", "gui-grounding", "web-agents", "screen-understanding"],
+	"languages": ["python", "typescript", "rust"],
+	"watch": [
+		{
+			"repo": "anthropics/anthropic-quickstarts",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["computer-use", "desktop-agents"]
+		},
+		{
+			"repo": "browser-use/browser-use",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["browser-automation", "web-agents"]
+		},
+		{
+			"repo": "anthropics/claude-computer-use-demo",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["computer-use", "desktop-agents"]
+		}
+	],
+	"thresholds": {
+		"minStars": 50,
+		"autoAddStars": 500,
+		"maxAgeDays": 45
+	},
+	"discoveryLog": []
+}

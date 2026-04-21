@@ -44,3 +44,6 @@ export const WATCH_AGENT_NAME = "project-watcher";
 
 /** Directory for watch run results */
 export const RESULTS_DIR = "results";
+
+/** Directory for scout definitions */
+export const SCOUTS_DIR = "scouts";
