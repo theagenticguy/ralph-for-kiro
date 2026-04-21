@@ -1,6 +1,6 @@
 {
 	"name": "project-watcher",
-	"description": "Iterative deep research agent for discovering trending GitHub repos matching watched topics and languages",
+	"description": "Iterative deep research agent for discovering trending GitHub repos matching watched topics and languages. Fans out per-topic deep dives to the probe-topic subagent.",
 	"tools": ["read", "write", "@brave-search", "@tavily", "@exa"],
 	"allowedTools": ["*"],
 	"includeMcpJson": true,
@@ -9,6 +9,8 @@
 		"file://../ralph-loop.local.json"
 	],
 	"prompt": "file://../steering/watcher-context.md",
+	"availableAgents": ["probe-*"],
+	"trustedAgents": ["probe-topic"],
 	"hooks": {
 		"agentSpawn": [{ "command": ".kiro/hooks/on-agent-spawn.sh" }],
 		"stop": [{ "command": ".kiro/hooks/on-stop.sh" }]

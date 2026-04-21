@@ -12,6 +12,8 @@
  */
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import probeTopicConfig from "../data/probe-topic.json";
+import probeTopicSteering from "../data/probe-topic.md" with { type: "text" };
 import agentConfig from "../data/project-watcher.json";
 import steeringContent from "../data/watcher-context.md" with { type: "text" };
 import { installHookScripts } from "./hook-installer";
@@ -35,15 +37,27 @@ export async function ensureScoutKiroTree(scoutDir: string): Promise<string> {
 		await mkdir(join(kiroDir, sub), { recursive: true });
 	}
 
-	// Agent config — idempotent write so bumps to the default propagate.
+	// Agent configs — idempotent writes so bumps to the defaults propagate.
+	// project-watcher is the scout's main agent; probe-topic is the
+	// intra-scout subagent it fans out to via use_subagent.
 	const agentPath = join(kiroDir, "agents", "project-watcher.json");
 	await Bun.write(agentPath, `${JSON.stringify(agentConfig, null, 2)}\n`);
 
-	// Steering — scout-local copy so each scout can diverge later without
-	// touching the repo-root file.
+	const probeAgentPath = join(kiroDir, "agents", "probe-topic.json");
+	await Bun.write(
+		probeAgentPath,
+		`${JSON.stringify(probeTopicConfig, null, 2)}\n`,
+	);
+
+	// Steering — scout-local copies so each scout can diverge later without
+	// touching the repo-root files. Preserved once a user has customized.
 	const steeringPath = join(kiroDir, "steering", "watcher-context.md");
 	if (!(await Bun.file(steeringPath).exists())) {
 		await Bun.write(steeringPath, steeringContent);
+	}
+	const probeSteeringPath = join(kiroDir, "steering", "probe-topic.md");
+	if (!(await Bun.file(probeSteeringPath).exists())) {
+		await Bun.write(probeSteeringPath, probeTopicSteering);
 	}
 
 	// Hooks — same scripts as repo-root, just re-stamped under the scout's

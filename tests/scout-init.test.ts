@@ -24,13 +24,30 @@ describe("ensureScoutKiroTree", () => {
 			const agent = JSON.parse(agentJson);
 			expect(agent.name).toBe("project-watcher");
 			expect(agent.hooks).toBeDefined();
+			// Subagent whitelist present so probe-topic can be spawned via
+			// use_subagent but nothing else can.
+			expect(agent.availableAgents).toEqual(["probe-*"]);
+			expect(agent.trustedAgents).toEqual(["probe-topic"]);
 
-			// Steering file present
+			// probe-topic subagent present and parseable
+			const probeAgentJson = await readFile(
+				join(kiroDir, "agents", "probe-topic.json"),
+				"utf-8",
+			);
+			const probeAgent = JSON.parse(probeAgentJson);
+			expect(probeAgent.name).toBe("probe-topic");
+
+			// Steering files present
 			const steering = await readFile(
 				join(kiroDir, "steering", "watcher-context.md"),
 				"utf-8",
 			);
 			expect(steering.length).toBeGreaterThan(0);
+			const probeSteering = await readFile(
+				join(kiroDir, "steering", "probe-topic.md"),
+				"utf-8",
+			);
+			expect(probeSteering.length).toBeGreaterThan(0);
 
 			// Hook scripts present and executable
 			for (const name of ["on-agent-spawn.sh", "on-stop.sh"]) {

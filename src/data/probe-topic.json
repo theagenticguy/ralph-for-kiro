@@ -1,0 +1,8 @@
+{
+	"name": "probe-topic",
+	"description": "Intra-scout subagent: deep-dives a single topic from the parent scout's manifest and returns a structured repo-discovery report. Invoked via use_subagent(InvokeSubagents) with one topic per call so topics are explored in parallel isolated contexts.",
+	"tools": ["read", "write", "@brave-search", "@tavily", "@exa"],
+	"allowedTools": ["read", "@brave-search", "@tavily", "@exa"],
+	"includeMcpJson": true,
+	"prompt": "file://../steering/probe-topic.md"
+}
