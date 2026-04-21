@@ -4,5 +4,9 @@
 	"tools": ["*"],
 	"allowedTools": ["*"],
 	"resources": ["file://../ralph-loop.local.json"],
-	"prompt": "file://../steering/ralph-context.md"
+	"prompt": "file://../steering/ralph-context.md",
+	"hooks": {
+		"agentSpawn": [{ "command": ".kiro/hooks/on-agent-spawn.sh" }],
+		"stop": [{ "command": ".kiro/hooks/on-stop.sh" }]
+	}
 }

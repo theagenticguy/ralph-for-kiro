@@ -7,6 +7,7 @@ import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { log } from "@clack/prompts";
 import pc from "picocolors";
+import { installHookScripts } from "../core/hook-installer";
 import {
 	listRuns,
 	readStatus,
@@ -30,6 +31,8 @@ interface WatchRunOptions {
 	minIterations: string;
 	maxIterations: string;
 	agent?: string;
+	manifest?: string;
+	scout?: string;
 }
 
 /**
@@ -60,6 +63,8 @@ export async function watchRunCommand(opts: WatchRunOptions): Promise<void> {
 		minIterations,
 		maxIterations,
 		agentName: opts.agent ?? null,
+		manifestPath: opts.manifest ?? null,
+		scoutName: opts.scout ?? null,
 	});
 }
 
@@ -102,6 +107,12 @@ export async function watchInitCommand(opts: WatchInitOptions): Promise<void> {
 	// Write steering file
 	await Bun.write(steeringPath, steeringContent);
 	log.success(`${pc.green("Created")} ${steeringPath}`);
+
+	// Stamp lifecycle hook scripts alongside the agent.
+	const hookPaths = await installHookScripts();
+	for (const p of hookPaths) {
+		log.success(`${pc.green("Created")} ${p}`);
+	}
 
 	// Copy MCP config if it doesn't exist
 	if (!(await Bun.file(mcpTargetPath).exists())) {

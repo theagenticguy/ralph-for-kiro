@@ -17,6 +17,47 @@ Read these files at the START of every iteration:
 - `.kiro/ralph-loop.local.json` - Loop state (iteration number, previous feedback)
 - The results folder path is provided in your prompt
 
+## Use `@path` References Inline (Kiro 1.26+)
+
+Prefer `@`-references over explicit read tool calls when you need to cite
+file contents. They pull the file into context directly — cheaper than
+`fs_read` and don't consume a tool-call turn:
+
+- `@manifest.json` — this scout's manifest (when running scout-scoped)
+- `@watch-manifest.json` — the repo-root manifest (non-scout watches)
+- `@.kiro/ralph-loop.local.json` — loop state for the current iteration
+
+The scout's own past findings are exposed via the `scout-history`
+knowledge-base resource (auto-indexed on agent spawn) — ask the agent
+about prior iterations through natural language; it will retrieve the
+relevant summaries automatically rather than requiring you to `@`-path
+specific files.
+
+## Fan Out with the probe-topic Subagent
+
+When you have 2 or more topics in `manifest.topics`, delegate the per-topic
+deep dives to the `probe-topic` subagent via `use_subagent` with
+`command: "InvokeSubagents"`. One subagent call per topic, all in parallel:
+
+```json
+{
+  "command": "InvokeSubagents",
+  "content": {
+    "subagents": [
+      { "agent_name": "probe-topic", "query": "topic=ai-evaluation, results=<RESULTS>, manifest=<MANIFEST_PATH>, min_stars=<N>, auto_add_stars=<M>, max_age_days=<D>, watched=[repo1, repo2, ...]" },
+      { "agent_name": "probe-topic", "query": "topic=llm-benchmarks, ..." }
+    ]
+  }
+}
+```
+
+Each probe writes one file to `<RESULTS>/probes/<topic>.md`. When all probes
+return, you read their outputs, roll auto-add recommendations into the
+manifest, bump `lastSeen` on freshness hits, and write the overall
+`summary.md`. Subagents run with isolated context — you own the synthesis.
+
+Skip the subagent hop if the scout has one topic only.
+
 ## Research Strategy by Phase
 
 ### Early Iterations (1-3): Broad Discovery

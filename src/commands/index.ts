@@ -9,6 +9,14 @@ export { initCommand } from "./init";
 export { loopCommand } from "./loop";
 export { resumeCommand } from "./resume";
 export {
+	scoutInitCommand,
+	scoutLsCommand,
+	scoutResultsCommand,
+	scoutRunCommand,
+	scoutStatusCommand,
+	scoutTailCommand,
+} from "./scout";
+export {
 	watchInitCommand,
 	watchLsCommand,
 	watchResultsCommand,

@@ -7,6 +7,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { log } from "@clack/prompts";
 import pc from "picocolors";
+import { installHookScripts } from "../core/hook-installer";
 import steeringContent from "../data/ralph-context.md" with { type: "text" };
 // Import bundled data files
 import agentConfig from "../data/ralph-wiggum.json";
@@ -54,6 +55,12 @@ export async function initCommand(opts: InitOptions): Promise<void> {
 	// Write steering file (imported as text at compile time)
 	await Bun.write(steeringPath, steeringContent);
 	log.success(`${pc.green("Created")} ${steeringPath}`);
+
+	// Stamp lifecycle hook scripts alongside the agent.
+	const hookPaths = await installHookScripts();
+	for (const p of hookPaths) {
+		log.success(`${pc.green("Created")} ${p}`);
+	}
 
 	// Success message
 	console.log();

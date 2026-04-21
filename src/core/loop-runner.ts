@@ -138,8 +138,19 @@ export async function runLoop(config: LoopConfig): Promise<LoopResult> {
 			// Log iteration start
 			log.step(pc.yellow(`Iteration ${iteration}`));
 
-			// Run kiro-cli
-			const exitCode = await client.runChat(config.prompt);
+			// Run kiro-cli. Pass hook env vars so .kiro/hooks/*.sh can write
+			// per-turn sidecar artifacts to the run directory without parsing
+			// the hook's stdin JSON payload (shape varies across Kiro versions).
+			// When scoutCwd is set, spawn with that as cwd so Kiro picks up
+			// the per-scout `.kiro/` tree rather than the repo-root one.
+			const exitCode = await client.runChat(config.prompt, {
+				hookEnv: {
+					runDir: config.runDir ?? undefined,
+					iteration,
+					scoutName: config.scoutName ?? "",
+				},
+				cwd: config.scoutCwd ?? undefined,
+			});
 
 			if (exitCode !== 0) {
 				log.warn(pc.red(`Kiro exited with code ${exitCode}`));

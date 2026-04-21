@@ -150,9 +150,54 @@ Trends and patterns observed across discoveries.
 ## Recommended for Watch List
 Repos that meet auto-add thresholds.
 
+## Pruning Suggestions
+Repos with `source: "discovered"` where `lastSeen` > 90 days ago.
+
 ## Open Questions
 Leads for future discovery runs.
 ```
+
+## Manifest Lifecycle — IMPORTANT
+
+You are responsible for keeping `watch-manifest.json` up to date. On your FINAL iteration:
+
+### Auto-Add (Growth)
+When you discover a repo that exceeds the `autoAddStars` threshold AND is not already in the `watch` array:
+- Add it to the `watch` array with these fields:
+  - `repo`: owner/name
+  - `added`: today's date (YYYY-MM-DD)
+  - `source`: "discovered"
+  - `tags`: relevant topic tags from the manifest
+  - `lastSeen`: today's date
+  - `discoveryCount`: 1
+  - `runId`: the task ID from your prompt
+
+### Freshness Tracking
+For every repo already in the `watch` array that you encounter in search results:
+- Update `lastSeen` to today's date
+- Increment `discoveryCount` by 1
+
+### Pruning Suggestions
+For repos where `source` is `"discovered"` and `lastSeen` is more than 90 days ago:
+- Do NOT remove them
+- List them in the "Pruning Suggestions" section of `summary.md` with reasoning
+- Manual entries (`source: "manual"`) are NEVER flagged
+
+### Discovery Log
+Append an entry to the `discoveryLog` array in the manifest:
+```json
+{
+  "runId": "TASK_ID",
+  "date": "YYYY-MM-DD",
+  "reposAdded": N,
+  "reposUpdated": N,
+  "pruningSuggested": N
+}
+```
+Cap the `discoveryLog` at 50 entries (remove oldest if needed).
+
+### Writing the Manifest
+After making changes, write the updated `watch-manifest.json` back to the project root. Preserve existing manual entries exactly as they are.
 
 ## Completion Rules
 

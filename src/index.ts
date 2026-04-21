@@ -11,6 +11,12 @@ import {
 	initCommand,
 	loopCommand,
 	resumeCommand,
+	scoutInitCommand,
+	scoutLsCommand,
+	scoutResultsCommand,
+	scoutRunCommand,
+	scoutStatusCommand,
+	scoutTailCommand,
 	watchInitCommand,
 	watchLsCommand,
 	watchResultsCommand,
@@ -89,6 +95,8 @@ const watchCmd = program
 	)
 	.option("-m, --max-iterations <number>", "Maximum iterations", "10")
 	.option("-a, --agent <name>", "Agent name override")
+	.option("--manifest <path>", "Path to watch manifest file")
+	.option("--scout <name>", "Scout name (namespaces results)")
 	.action(watchRunCommand);
 
 watchCmd
@@ -107,5 +115,56 @@ watchCmd
 	.command("ls")
 	.description("List recent watch runs")
 	.action(watchLsCommand);
+
+// Scout command (fleet of focused watchers)
+const scoutCmd = program
+	.command("scout")
+	.description("Manage a fleet of focused discovery scouts")
+	.option("-n, --min-iterations <number>", "Minimum iterations per scout", "3")
+	.option("-m, --max-iterations <number>", "Maximum iterations per scout", "10")
+	.option("--name <name>", "Run a specific scout only")
+	.option("-a, --agent <name>", "Agent name override")
+	.option(
+		"-c, --concurrency <number>",
+		"Max scouts to run in parallel (default 1 = sequential)",
+		"1",
+	)
+	.action(scoutRunCommand);
+
+scoutCmd
+	.command("ls")
+	.description("List all available scouts")
+	.action(scoutLsCommand);
+
+scoutCmd
+	.command("results")
+	.description("Show results across scouts")
+	.argument("[name]", "Scout name (defaults to all)")
+	.action(scoutResultsCommand);
+
+scoutCmd
+	.command("init")
+	.description("Scaffold a new scout")
+	.argument("<name>", "Scout name (becomes directory name)")
+	.option("-t, --topics <topics>", "Comma-separated topics")
+	.option("-l, --languages <langs>", "Comma-separated languages")
+	.option("-f, --force", "Overwrite existing scout")
+	.action(scoutInitCommand);
+
+scoutCmd
+	.command("status")
+	.description("One-line-per-scout fleet summary of the latest run")
+	.action(scoutStatusCommand);
+
+scoutCmd
+	.command("tail")
+	.description("Follow a scout's in-flight run by watching iteration sidecars")
+	.argument("<name>", "Scout name to tail")
+	.option(
+		"-i, --interval <ms>",
+		"Poll interval in milliseconds (default 2000)",
+		"2000",
+	)
+	.action(scoutTailCommand);
 
 program.parse();

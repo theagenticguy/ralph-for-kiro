@@ -1,0 +1,37 @@
+{
+	"version": "1.0",
+	"topics": ["ai-evaluation", "llm-benchmarks", "agent-testing", "prompt-testing", "red-teaming", "rag-evaluation"],
+	"languages": ["python", "typescript"],
+	"watch": [
+		{
+			"repo": "confident-ai/deepeval",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["ai-evaluation", "llm-benchmarks", "pytest"]
+		},
+		{
+			"repo": "explodinggradients/ragas",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["rag-evaluation", "ai-evaluation"]
+		},
+		{
+			"repo": "promptfoo/promptfoo",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["prompt-testing", "red-teaming", "ai-evaluation"]
+		},
+		{
+			"repo": "braintrustdata/braintrust-sdk",
+			"added": "2026-03-23",
+			"source": "manual",
+			"tags": ["ai-evaluation", "llm-benchmarks"]
+		}
+	],
+	"thresholds": {
+		"minStars": 50,
+		"autoAddStars": 300,
+		"maxAgeDays": 60
+	},
+	"discoveryLog": []
+}

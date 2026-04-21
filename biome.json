@@ -8,7 +8,10 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"complexity": {
+				"useLiteralKeys": "off"
+			}
 		}
 	},
 	"assist": { "actions": { "source": { "organizeImports": "on" } } }
