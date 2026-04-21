@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { access, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureScoutKiroTree } from "../src/core/scout-init.ts";
@@ -11,9 +11,11 @@ describe("ensureScoutKiroTree", () => {
 			const scoutDir = join(tempDir, "my-scout");
 			const kiroDir = await ensureScoutKiroTree(scoutDir);
 
-			// Tree shape
+			// Tree shape — single stat() per subdir (throws if missing)
+			// avoids the access()-then-open TOCTOU CodeQL flags.
 			for (const sub of ["agents", "steering", "hooks", "settings"]) {
-				await access(join(kiroDir, sub));
+				const st = await stat(join(kiroDir, sub));
+				expect(st.isDirectory()).toBe(true);
 			}
 
 			// Agent config present and parseable
@@ -62,10 +64,9 @@ describe("ensureScoutKiroTree", () => {
 			);
 			expect(probeSteering.length).toBeGreaterThan(0);
 
-			// Hook scripts present and executable
+			// Hook scripts present and executable — single stat()
 			for (const name of ["on-agent-spawn.sh", "on-stop.sh"]) {
 				const p = join(kiroDir, "hooks", name);
-				await access(p);
 				const st = await stat(p);
 				expect(st.mode & 0o100).toBe(0o100);
 			}

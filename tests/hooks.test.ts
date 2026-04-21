@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { access, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HOOK_FILES, installHookScripts } from "../src/core/hook-installer.ts";
@@ -49,15 +49,15 @@ describe("installHookScripts", () => {
 
 			for (const scriptName of Object.values(HOOK_FILES)) {
 				const scriptPath = join(hooksDir, scriptName);
-				await access(scriptPath);
+				// Single stat() — avoids the access()-then-stat TOCTOU that
+				// CodeQL flags as js/file-system-race. stat() throws ENOENT
+				// if the file doesn't exist, which fails the test cleanly.
+				const st = await stat(scriptPath);
+				expect(st.mode & 0o100).toBe(0o100);
 
 				const body = await readFile(scriptPath, "utf-8");
 				expect(body.startsWith("#!/usr/bin/env bash")).toBe(true);
 				expect(body).toContain("RALPH_RUN_DIR");
-
-				const st = await stat(scriptPath);
-				// Owner-executable bit set
-				expect(st.mode & 0o100).toBe(0o100);
 			}
 		} finally {
 			await rm(tempDir, { recursive: true, force: true });
