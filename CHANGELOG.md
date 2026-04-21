@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/theagenticguy/ralph-for-kiro/compare/v1.0.0...v1.1.0) (2026-04-21)
+
+
+### Features
+
+* add `ralph watch` command for iterative repo discovery ([#31](https://github.com/theagenticguy/ralph-for-kiro/issues/31)) ([5337b57](https://github.com/theagenticguy/ralph-for-kiro/commit/5337b576d89af3c869aa6b97f348df41a0bdabdc))
+
 ## [Unreleased]
 
 ### Features
