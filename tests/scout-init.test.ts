@@ -29,6 +29,19 @@ describe("ensureScoutKiroTree", () => {
 			expect(agent.availableAgents).toEqual(["probe-*"]);
 			expect(agent.trustedAgents).toEqual(["probe-topic"]);
 
+			// Resources rewritten for scout cwd; includes the scoped
+			// knowledge-base index over this scout's own history.
+			expect(agent.resources).toContain("file://manifest.json");
+			const kb = agent.resources.find(
+				(r: unknown): r is { type: string; include: string[] } =>
+					typeof r === "object" && r !== null && "type" in r,
+			);
+			expect(kb).toBeDefined();
+			expect(kb.type).toBe("knowledgeBase");
+			// Scoped to THIS scout only — ai-security scout must not see
+			// ai-eval history and vice versa.
+			expect(kb.include).toEqual(["my-scout/**/summary.md"]);
+
 			// probe-topic subagent present and parseable
 			const probeAgentJson = await readFile(
 				join(kiroDir, "agents", "probe-topic.json"),

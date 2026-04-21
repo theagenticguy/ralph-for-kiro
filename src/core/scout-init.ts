@@ -11,12 +11,20 @@
  * @module core/scout-init
  */
 import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import probeTopicConfig from "../data/probe-topic.json";
 import probeTopicSteering from "../data/probe-topic.md" with { type: "text" };
 import agentConfig from "../data/project-watcher.json";
 import steeringContent from "../data/watcher-context.md" with { type: "text" };
 import { installHookScripts } from "./hook-installer";
+
+/**
+ * Derive the scout name from its directory so the knowledge-base index
+ * scopes to `results/<name>/**` and only sees this scout's own history.
+ */
+function scoutNameOf(scoutDir: string): string {
+	return basename(scoutDir);
+}
 
 /** Subfolders under a scout's `.kiro/`, stamped on first run. */
 const SCOUT_KIRO_SUBDIRS = ["agents", "steering", "hooks", "settings"] as const;
@@ -40,8 +48,34 @@ export async function ensureScoutKiroTree(scoutDir: string): Promise<string> {
 	// Agent configs — idempotent writes so bumps to the defaults propagate.
 	// project-watcher is the scout's main agent; probe-topic is the
 	// intra-scout subagent it fans out to via use_subagent.
+	//
+	// The default agentConfig ships with resources paths relative to the
+	// REPO-ROOT cwd (e.g. `../../watch-manifest.json`). When run from a
+	// scout cwd (`scouts/<name>/`), those paths are wrong — the manifest is
+	// right there as `manifest.json` and the loop state is
+	// `.kiro/ralph-loop.local.json`. We also attach a knowledge-base
+	// resource over past scout summaries so each scout sees only its own
+	// history — no cross-scout leakage. See src/data/probe-topic.md for
+	// the probe-topic contract.
+	const scoutAgent = {
+		...agentConfig,
+		resources: [
+			"file://manifest.json",
+			"file://.kiro/ralph-loop.local.json",
+			{
+				type: "knowledgeBase",
+				source: "file://../../results",
+				name: "scout-history",
+				description:
+					"Past summary.md files produced by this scout. Use to avoid re-discovering repos and to reference prior iteration findings.",
+				indexType: "best",
+				include: [`${scoutNameOf(scoutDir)}/**/summary.md`],
+				autoUpdate: true,
+			},
+		],
+	};
 	const agentPath = join(kiroDir, "agents", "project-watcher.json");
-	await Bun.write(agentPath, `${JSON.stringify(agentConfig, null, 2)}\n`);
+	await Bun.write(agentPath, `${JSON.stringify(scoutAgent, null, 2)}\n`);
 
 	const probeAgentPath = join(kiroDir, "agents", "probe-topic.json");
 	await Bun.write(
