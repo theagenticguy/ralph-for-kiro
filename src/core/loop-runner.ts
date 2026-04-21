@@ -138,8 +138,14 @@ export async function runLoop(config: LoopConfig): Promise<LoopResult> {
 			// Log iteration start
 			log.step(pc.yellow(`Iteration ${iteration}`));
 
-			// Run kiro-cli
-			const exitCode = await client.runChat(config.prompt);
+			// Run kiro-cli. Pass hook env vars so .kiro/hooks/*.sh can write
+			// per-turn sidecar artifacts to the run directory without parsing
+			// the hook's stdin JSON payload (shape varies across Kiro versions).
+			const exitCode = await client.runChat(config.prompt, {
+				runDir: config.runDir ?? undefined,
+				iteration,
+				scoutName: config.scoutName ?? "",
+			});
 
 			if (exitCode !== 0) {
 				log.warn(pc.red(`Kiro exited with code ${exitCode}`));

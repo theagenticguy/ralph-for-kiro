@@ -36,6 +36,9 @@ export const AGENT_CONFIG_PATH = join(KIRO_AGENTS_DIR, "ralph-wiggum.json");
 /** Directory for kiro settings (MCP config, etc.) */
 export const KIRO_SETTINGS_DIR = join(KIRO_DIR, "settings");
 
+/** Directory for kiro lifecycle hook scripts */
+export const KIRO_HOOKS_DIR = join(KIRO_DIR, "hooks");
+
 /** Path to the watch manifest file */
 export const WATCH_MANIFEST_FILE = "watch-manifest.json";
 

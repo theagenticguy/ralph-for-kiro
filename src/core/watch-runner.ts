@@ -173,6 +173,8 @@ export async function runWatch(opts: WatchRunOptions): Promise<void> {
 		maxIterations: opts.maxIterations,
 		completionPromise: "COMPLETE",
 		agentName: opts.agentName ?? WATCH_AGENT_NAME,
+		runDir: resultsPath,
+		scoutName: opts.scoutName ?? null,
 	});
 
 	try {

@@ -27,6 +27,14 @@ export const LoopConfigSchema = z.object({
 	isResume: z.boolean().default(false),
 	/** Iteration number to resume from. Default: 0 */
 	resumeFromIteration: z.number().int().min(0).default(0),
+	/**
+	 * Absolute path to the per-run results directory. When set, the runner
+	 * passes RALPH_RUN_DIR to kiro-cli so hook scripts can drop per-iteration
+	 * sidecar artifacts under `iterations/`.
+	 */
+	runDir: z.string().nullable().default(null),
+	/** Scout name for scout-scoped runs. Empty/null for non-scout watches. */
+	scoutName: z.string().nullable().default(null),
 });
 
 /**
