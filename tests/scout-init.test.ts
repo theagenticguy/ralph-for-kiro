@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureScoutKiroTree } from "../src/core/scout-init.ts";
@@ -18,12 +18,11 @@ describe("ensureScoutKiroTree", () => {
 				expect(st.isDirectory()).toBe(true);
 			}
 
-			// Agent config present and parseable
-			const agentJson = await readFile(
+			// Agent config present and parseable (Bun.file reads without
+			// the stat+readFile TOCTOU pattern CodeQL flags).
+			const agent = await Bun.file(
 				join(kiroDir, "agents", "project-watcher.json"),
-				"utf-8",
-			);
-			const agent = JSON.parse(agentJson);
+			).json();
 			expect(agent.name).toBe("project-watcher");
 			expect(agent.hooks).toBeDefined();
 			// Subagent whitelist present so probe-topic can be spawned via
@@ -45,23 +44,19 @@ describe("ensureScoutKiroTree", () => {
 			expect(kb.include).toEqual(["my-scout/**/summary.md"]);
 
 			// probe-topic subagent present and parseable
-			const probeAgentJson = await readFile(
+			const probeAgent = await Bun.file(
 				join(kiroDir, "agents", "probe-topic.json"),
-				"utf-8",
-			);
-			const probeAgent = JSON.parse(probeAgentJson);
+			).json();
 			expect(probeAgent.name).toBe("probe-topic");
 
 			// Steering files present
-			const steering = await readFile(
+			const steering = await Bun.file(
 				join(kiroDir, "steering", "watcher-context.md"),
-				"utf-8",
-			);
+			).text();
 			expect(steering.length).toBeGreaterThan(0);
-			const probeSteering = await readFile(
+			const probeSteering = await Bun.file(
 				join(kiroDir, "steering", "probe-topic.md"),
-				"utf-8",
-			);
+			).text();
 			expect(probeSteering.length).toBeGreaterThan(0);
 
 			// Hook scripts present and executable — single stat()
@@ -87,7 +82,7 @@ describe("ensureScoutKiroTree", () => {
 
 			// Re-run — should NOT overwrite steering
 			await ensureScoutKiroTree(scoutDir);
-			const after = await readFile(steeringPath, "utf-8");
+			const after = await Bun.file(steeringPath).text();
 			expect(after).toBe("CUSTOMIZED\n");
 		} finally {
 			await rm(tempDir, { recursive: true, force: true });

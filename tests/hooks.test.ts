@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HOOK_FILES, installHookScripts } from "../src/core/hook-installer.ts";
@@ -49,13 +49,15 @@ describe("installHookScripts", () => {
 
 			for (const scriptName of Object.values(HOOK_FILES)) {
 				const scriptPath = join(hooksDir, scriptName);
-				// Single stat() — avoids the access()-then-stat TOCTOU that
-				// CodeQL flags as js/file-system-race. stat() throws ENOENT
-				// if the file doesn't exist, which fails the test cleanly.
-				const st = await stat(scriptPath);
+				// Bun.file gives us a single handle we derive both stat()
+				// (for mode check) and text() (for body check) from. CodeQL
+				// treats separate fs/promises.stat + readFile calls on the
+				// same path as a TOCTOU race (js/file-system-race).
+				const file = Bun.file(scriptPath);
+				const st = await file.stat();
 				expect(st.mode & 0o100).toBe(0o100);
 
-				const body = await readFile(scriptPath, "utf-8");
+				const body = await file.text();
 				expect(body.startsWith("#!/usr/bin/env bash")).toBe(true);
 				expect(body).toContain("RALPH_RUN_DIR");
 			}
