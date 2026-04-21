@@ -15,6 +15,8 @@ import {
 	scoutLsCommand,
 	scoutResultsCommand,
 	scoutRunCommand,
+	scoutStatusCommand,
+	scoutTailCommand,
 	watchInitCommand,
 	watchLsCommand,
 	watchResultsCommand,
@@ -122,6 +124,11 @@ const scoutCmd = program
 	.option("-m, --max-iterations <number>", "Maximum iterations per scout", "10")
 	.option("--name <name>", "Run a specific scout only")
 	.option("-a, --agent <name>", "Agent name override")
+	.option(
+		"-c, --concurrency <number>",
+		"Max scouts to run in parallel (default 1 = sequential)",
+		"1",
+	)
 	.action(scoutRunCommand);
 
 scoutCmd
@@ -143,5 +150,21 @@ scoutCmd
 	.option("-l, --languages <langs>", "Comma-separated languages")
 	.option("-f, --force", "Overwrite existing scout")
 	.action(scoutInitCommand);
+
+scoutCmd
+	.command("status")
+	.description("One-line-per-scout fleet summary of the latest run")
+	.action(scoutStatusCommand);
+
+scoutCmd
+	.command("tail")
+	.description("Follow a scout's in-flight run by watching iteration sidecars")
+	.argument("<name>", "Scout name to tail")
+	.option(
+		"-i, --interval <ms>",
+		"Poll interval in milliseconds (default 2000)",
+		"2000",
+	)
+	.action(scoutTailCommand);
 
 program.parse();

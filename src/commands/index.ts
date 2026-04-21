@@ -13,6 +13,8 @@ export {
 	scoutLsCommand,
 	scoutResultsCommand,
 	scoutRunCommand,
+	scoutStatusCommand,
+	scoutTailCommand,
 } from "./scout";
 export {
 	watchInitCommand,
