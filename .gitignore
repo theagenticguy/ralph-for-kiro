@@ -645,3 +645,6 @@ watch-manifest.json
 
 # Compiled single-file binary (105MB) from `bun build --compile`
 /ralph-for-kiro
+
+# Gym sparring artefacts
+gym/

@@ -9,8 +9,6 @@
 		"file://../ralph-loop.local.json"
 	],
 	"prompt": "file://../steering/watcher-context.md",
-	"availableAgents": ["probe-*"],
-	"trustedAgents": ["probe-topic"],
 	"hooks": {
 		"agentSpawn": [{ "command": ".kiro/hooks/on-agent-spawn.sh" }],
 		"stop": [{ "command": ".kiro/hooks/on-stop.sh" }]

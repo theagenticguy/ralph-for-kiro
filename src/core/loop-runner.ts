@@ -51,7 +51,12 @@ export interface LoopResult {
  */
 export async function runLoop(config: LoopConfig): Promise<LoopResult> {
 	const client = new KiroClient(config.agentName);
-	const cwd = process.cwd();
+	// Session-reader cwd must match the subprocess cwd used for kiro-cli —
+	// Kiro keys its SQLite conversation history by the chat's cwd, so reading
+	// from the runner's (repo-root) cwd would miss every scout session and
+	// make `checkCompletionPromise` silently fail. Fall back to process.cwd()
+	// for non-scout watches, which still spawn in the repo root.
+	const cwd = config.scoutCwd ?? process.cwd();
 
 	// Cleanup function to mark state as inactive (preserves for resume)
 	const cleanup = async (
