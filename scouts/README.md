@@ -58,19 +58,18 @@ ralph scout tail my-scout             # watch an in-flight run
 
 Output lands in `results/<scout-name>/pw-YYYYMMDD-HHmm/` (also gitignored).
 
-## Running nightly via cron
+## Running on a schedule
 
-If you set up a nightly cron, it will fail silently if `scouts/` is empty.
-Either seed a scout from a template or run `ralph scout init` once before
-the first cron invocation. Pin the user dir explicitly in the crontab entry
-if you want scouts to live outside the repo:
+Scouts are a CLI, so any scheduler works — cron, systemd timers, GitHub
+Actions `schedule:`, launchd on macOS. Pin `RALPH_USER_DIR` in the entry if
+you want scout data to live outside the repo:
 
 ```cron
-0 9 * * * RALPH_USER_DIR=$HOME/ralph-data /path/to/ralph-for-kiro \
-  scout --concurrency 3 --min-iterations 2 --max-iterations 4 \
+RALPH_USER_DIR=$HOME/ralph-data
+0 9 * * * /path/to/ralph-for-kiro scout \
+  --concurrency 3 --min-iterations 2 --max-iterations 4 \
   >> $HOME/ralph-data/cron.log 2>&1
 ```
 
-Remember that crontab times are in the host's local timezone — if your
-devbox runs UTC and you want a local-CST time, convert accordingly (and
-remember DST will shift the run by an hour twice a year).
+The scheduler will fail silently if `scouts/` is empty — seed with
+`ralph scout init` or `--from-example` once before the first run.
