@@ -2,8 +2,23 @@
 	"name": "probe-topic",
 	"description": "Intra-scout subagent: deep-dives a single topic from the parent scout's manifest and returns a structured repo-discovery report. Invoked via use_subagent(InvokeSubagents) with one topic per call so topics are explored in parallel isolated contexts.",
 	"model": "claude-haiku-4-5-20251001",
-	"tools": ["read", "write", "@brave-search", "@tavily", "@exa"],
-	"allowedTools": ["read", "@brave-search", "@tavily", "@exa"],
+	"tools": [
+		"read",
+		"write",
+		"web_search",
+		"web_fetch",
+		"@brave-search",
+		"@tavily",
+		"@exa"
+	],
+	"allowedTools": [
+		"read",
+		"web_search",
+		"web_fetch",
+		"@brave-search",
+		"@tavily",
+		"@exa"
+	],
 	"includeMcpJson": true,
 	"prompt": "file://../steering/probe-topic.md"
 }
