@@ -20,8 +20,8 @@ import {
 	KIRO_AGENTS_DIR,
 	KIRO_SETTINGS_DIR,
 	KIRO_STEERING_DIR,
-	RESULTS_DIR,
-	WATCH_MANIFEST_FILE,
+	resultsDir,
+	watchManifestFile,
 } from "../utils/paths";
 
 /**
@@ -98,7 +98,7 @@ export async function watchInitCommand(opts: WatchInitOptions): Promise<void> {
 	await mkdir(KIRO_AGENTS_DIR, { recursive: true });
 	await mkdir(KIRO_STEERING_DIR, { recursive: true });
 	await mkdir(KIRO_SETTINGS_DIR, { recursive: true });
-	await mkdir(RESULTS_DIR, { recursive: true });
+	await mkdir(resultsDir(), { recursive: true });
 
 	// Write agent config
 	await Bun.write(agentPath, `${JSON.stringify(agentConfig, null, 2)}\n`);
@@ -132,16 +132,16 @@ export async function watchInitCommand(opts: WatchInitOptions): Promise<void> {
 	}
 
 	// Copy manifest if it doesn't exist
-	if (!(await Bun.file(WATCH_MANIFEST_FILE).exists())) {
+	if (!(await Bun.file(watchManifestFile()).exists())) {
 		const manifestSource = Bun.file(manifestSourcePath);
 		if (await manifestSource.exists()) {
 			const manifestContent = await manifestSource.text();
-			await Bun.write(WATCH_MANIFEST_FILE, manifestContent);
-			log.success(`${pc.green("Created")} ${WATCH_MANIFEST_FILE}`);
+			await Bun.write(watchManifestFile(), manifestContent);
+			log.success(`${pc.green("Created")} ${watchManifestFile()}`);
 			log.message(pc.dim("  Edit this file to set your topics and languages"));
 		}
 	} else {
-		log.message(pc.dim(`  ${WATCH_MANIFEST_FILE} already exists, skipping`));
+		log.message(pc.dim(`  ${watchManifestFile()} already exists, skipping`));
 	}
 
 	// Success message
@@ -221,7 +221,7 @@ export async function watchResultsCommand(taskId?: string): Promise<void> {
 	}
 
 	// Show iteration files
-	const iterationsDir = join(RESULTS_DIR, targetId, "iterations");
+	const iterationsDir = join(resultsDir(), targetId, "iterations");
 	try {
 		const files = await readdir(iterationsDir);
 		if (files.length > 0) {

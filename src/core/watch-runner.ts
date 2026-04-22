@@ -11,10 +11,10 @@ import { LoopConfigSchema } from "../schemas/config";
 import { type WatchManifest, WatchManifestSchema } from "../schemas/manifest";
 import { type WatchStatus, WatchStatusSchema } from "../schemas/results";
 import {
-	RESULTS_DIR,
-	SCOUTS_DIR,
+	resultsDir,
+	scoutsDir,
 	WATCH_AGENT_NAME,
-	WATCH_MANIFEST_FILE,
+	watchManifestFile,
 } from "../utils/paths";
 import { runLoop } from "./loop-runner";
 import { ensureScoutKiroTree } from "./scout-init";
@@ -52,7 +52,7 @@ export function generateTaskId(): string {
 export async function readManifest(
 	manifestPath?: string | null,
 ): Promise<WatchManifest> {
-	const path = manifestPath ?? WATCH_MANIFEST_FILE;
+	const path = manifestPath ?? watchManifestFile();
 	const file = Bun.file(path);
 
 	if (!(await file.exists())) {
@@ -123,8 +123,8 @@ export async function runWatch(opts: WatchRunOptions): Promise<void> {
 	// When running as a scout, namespace results under the scout name
 	const taskId = generateTaskId();
 	const resultsBase = opts.scoutName
-		? join(RESULTS_DIR, opts.scoutName)
-		: RESULTS_DIR;
+		? join(resultsDir(), opts.scoutName)
+		: resultsDir();
 	const resultsPath = join(resultsBase, taskId);
 	const iterationsPath = join(resultsPath, "iterations");
 
@@ -165,7 +165,7 @@ export async function runWatch(opts: WatchRunOptions): Promise<void> {
 	const absResultsPath = isAbsolute(resultsPath)
 		? resultsPath
 		: resolve(process.cwd(), resultsPath);
-	const manifestFilePath = opts.manifestPath ?? WATCH_MANIFEST_FILE;
+	const manifestFilePath = opts.manifestPath ?? watchManifestFile();
 	const absManifestPath = isAbsolute(manifestFilePath)
 		? manifestFilePath
 		: resolve(process.cwd(), manifestFilePath);
@@ -182,7 +182,7 @@ export async function runWatch(opts: WatchRunOptions): Promise<void> {
 	// repo root for backwards compatibility.
 	let scoutCwd: string | null = null;
 	if (opts.scoutName) {
-		const scoutDir = resolve(process.cwd(), SCOUTS_DIR, opts.scoutName);
+		const scoutDir = resolve(process.cwd(), scoutsDir(), opts.scoutName);
 		await ensureScoutKiroTree(scoutDir);
 		scoutCwd = scoutDir;
 	}
@@ -229,7 +229,7 @@ export async function readStatus(
 	taskId: string,
 	scoutName?: string | null,
 ): Promise<WatchStatus | null> {
-	const base = scoutName ? join(RESULTS_DIR, scoutName) : RESULTS_DIR;
+	const base = scoutName ? join(resultsDir(), scoutName) : resultsDir();
 	const statusPath = join(base, taskId, "status.json");
 	const file = Bun.file(statusPath);
 
@@ -248,7 +248,7 @@ export async function readSummary(
 	taskId: string,
 	scoutName?: string | null,
 ): Promise<string | null> {
-	const base = scoutName ? join(RESULTS_DIR, scoutName) : RESULTS_DIR;
+	const base = scoutName ? join(resultsDir(), scoutName) : resultsDir();
 	const summaryPath = join(base, taskId, "summary.md");
 	const file = Bun.file(summaryPath);
 
@@ -272,7 +272,7 @@ export interface WatchRunEntry extends WatchStatus {
 export async function listRuns(
 	scoutName?: string | null,
 ): Promise<WatchRunEntry[]> {
-	const base = scoutName ? join(RESULTS_DIR, scoutName) : RESULTS_DIR;
+	const base = scoutName ? join(resultsDir(), scoutName) : resultsDir();
 
 	// Check if directory exists
 	try {

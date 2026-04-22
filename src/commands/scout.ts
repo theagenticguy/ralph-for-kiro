@@ -13,7 +13,28 @@ import {
 	runWatch,
 	type WatchRunEntry,
 } from "../core/watch-runner";
-import { RESULTS_DIR, SCOUTS_DIR } from "../utils/paths";
+import hnFrontpageManifest from "../data/examples/hn-frontpage-manifest.json";
+import hnFrontpageSteering from "../data/examples/hn-frontpage-steering.md" with {
+	type: "text",
+};
+import { resultsDir, scoutsDir } from "../utils/paths";
+
+/**
+ * Registry of built-in scout templates shipped under src/data/examples/.
+ * Each entry supplies a manifest object + a steering markdown string that
+ * `ralph scout init --from-example <key>` copies into a new scout's tree.
+ */
+const SCOUT_EXAMPLES: Record<
+	string,
+	{ manifest: unknown; steering: string; description: string }
+> = {
+	"hn-frontpage": {
+		manifest: hnFrontpageManifest,
+		steering: hnFrontpageSteering,
+		description:
+			"RSS-feed-driven trend scout for HN frontpage + best + show. Trend + surprise output, not repo discovery.",
+	},
+};
 
 /**
  * A scout definition derived from its directory and manifest.
@@ -48,18 +69,18 @@ interface ScoutRunOptions {
  */
 async function discoverScouts(): Promise<ScoutInfo[]> {
 	try {
-		await readdir(SCOUTS_DIR);
+		await readdir(scoutsDir());
 	} catch {
 		return [];
 	}
 
-	const entries = await readdir(SCOUTS_DIR, { withFileTypes: true });
+	const entries = await readdir(scoutsDir(), { withFileTypes: true });
 	const scouts: ScoutInfo[] = [];
 
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue;
 
-		const manifestPath = join(SCOUTS_DIR, entry.name, "manifest.json");
+		const manifestPath = join(scoutsDir(), entry.name, "manifest.json");
 		try {
 			const manifest = await readManifest(manifestPath);
 			scouts.push({
@@ -98,7 +119,7 @@ export async function scoutRunCommand(opts: ScoutRunOptions): Promise<void> {
 	if (allScouts.length === 0) {
 		log.error(
 			pc.red(
-				`No scouts found in ${SCOUTS_DIR}/\nRun 'ralph scout init <name>' to create one.`,
+				`No scouts found in ${scoutsDir()}/\nRun 'ralph scout init <name>' to create one.`,
 			),
 		);
 		return;
@@ -232,7 +253,7 @@ export async function scoutLsCommand(): Promise<void> {
 
 	if (scouts.length === 0) {
 		log.message(
-			`No scouts found in ${SCOUTS_DIR}/. Run 'ralph scout init <name>' to create one.`,
+			`No scouts found in ${scoutsDir()}/. Run 'ralph scout init <name>' to create one.`,
 		);
 		return;
 	}
@@ -335,13 +356,22 @@ export async function scoutResultsCommand(name?: string): Promise<void> {
 }
 
 /**
- * Scaffolds a new scout with an empty manifest.
+ * Scaffolds a new scout with an empty manifest — or, with --from-example,
+ * by copying a built-in template (manifest + steering) into the new scout's
+ * tree. Steering from a template goes to
+ * `scouts/<name>/.kiro/steering/watcher-context.md`; ensureScoutKiroTree
+ * preserves existing steering so the template customization survives.
  */
 export async function scoutInitCommand(
 	name: string,
-	opts: { topics?: string; languages?: string; force?: boolean },
+	opts: {
+		topics?: string;
+		languages?: string;
+		force?: boolean;
+		fromExample?: string;
+	},
 ): Promise<void> {
-	const scoutDir = join(SCOUTS_DIR, name);
+	const scoutDir = join(scoutsDir(), name);
 	const manifestPath = join(scoutDir, "manifest.json");
 
 	// Check for existing
@@ -361,6 +391,38 @@ export async function scoutInitCommand(
 	}
 
 	await mkdir(scoutDir, { recursive: true });
+
+	if (opts.fromExample) {
+		const example = SCOUT_EXAMPLES[opts.fromExample];
+		if (!example) {
+			const available = Object.keys(SCOUT_EXAMPLES).join(", ");
+			log.error(
+				pc.red(
+					`Unknown example "${opts.fromExample}". Available: ${available || "(none)"}`,
+				),
+			);
+			return;
+		}
+
+		// Write the template manifest as-is.
+		await Bun.write(
+			manifestPath,
+			`${JSON.stringify(example.manifest, null, "\t")}\n`,
+		);
+
+		// Stamp the custom steering so ensureScoutKiroTree preserves it on
+		// first run (it skips steering writes when the file already exists).
+		const steeringDir = join(scoutDir, ".kiro", "steering");
+		await mkdir(steeringDir, { recursive: true });
+		await Bun.write(join(steeringDir, "watcher-context.md"), example.steering);
+
+		log.success(
+			`${pc.green("Created")} scout ${pc.cyan(name)} from example ${pc.cyan(opts.fromExample)} at ${scoutDir}`,
+		);
+		log.message(pc.dim(`  ${example.description}`));
+		log.message(pc.dim(`\n  Run: ralph scout run --name ${name}`));
+		return;
+	}
 
 	const topics = opts.topics
 		? opts.topics.split(",").map((t) => t.trim())
@@ -399,7 +461,7 @@ export async function scoutInitCommand(
 export async function scoutStatusCommand(): Promise<void> {
 	const scouts = await discoverScouts();
 	if (scouts.length === 0) {
-		log.message(`No scouts found in ${SCOUTS_DIR}/.`);
+		log.message(`No scouts found in ${scoutsDir()}/.`);
 		return;
 	}
 
@@ -477,7 +539,7 @@ export async function scoutTailCommand(
 		return;
 	}
 
-	const iterationsDir = join(RESULTS_DIR, name, latest.taskId, "iterations");
+	const iterationsDir = join(resultsDir(), name, latest.taskId, "iterations");
 	log.info(pc.bold(`Tailing ${pc.cyan(name)} — run ${latest.taskId}`));
 	log.message(pc.dim(`   ${iterationsDir} (polling every ${intervalMs}ms)`));
 	console.log();
