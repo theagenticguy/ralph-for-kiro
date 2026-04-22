@@ -643,6 +643,11 @@ watch-manifest.json
 .kiro/ralph-loop.local.json
 .kiro/ralph-session.json
 
+# Scouts are user data (your topics, your watch lists, your discovery
+# history). See scouts/README.md. Only the README itself is committed.
+scouts/*
+!scouts/README.md
+
 # Compiled single-file binary (105MB) from `bun build --compile`
 /ralph-for-kiro
 
