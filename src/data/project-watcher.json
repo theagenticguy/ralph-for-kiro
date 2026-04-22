@@ -1,7 +1,15 @@
 {
 	"name": "project-watcher",
 	"description": "Iterative deep research agent for discovering trending GitHub repos matching watched topics and languages. Fans out per-topic deep dives to the probe-topic subagent.",
-	"tools": ["read", "write", "@brave-search", "@tavily", "@exa"],
+	"tools": [
+		"read",
+		"write",
+		"web_search",
+		"web_fetch",
+		"@brave-search",
+		"@tavily",
+		"@exa"
+	],
 	"allowedTools": ["*"],
 	"includeMcpJson": true,
 	"resources": [

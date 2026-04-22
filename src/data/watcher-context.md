@@ -80,6 +80,15 @@ Cast a wide net across all search tools:
 - Search for blog posts announcing new tools and frameworks
 - Search for "awesome list" additions in your topic areas
 
+**Fallback — Kiro native `web_search` / `web_fetch`:**
+If a given MCP search provider returns an authentication or rate-limit
+error, fall back to the built-in `web_search` and `web_fetch` tools rather
+than giving up or synthesizing from training knowledge. Prefer the MCP
+providers for their structured results and source diversity, but do not
+treat them as the only path. A scout run with zero discoveries because all
+three MCPs auth-failed is a preventable failure mode — native search is
+always available.
+
 For each candidate repo found, record:
 - Full repo name (owner/repo)
 - GitHub URL

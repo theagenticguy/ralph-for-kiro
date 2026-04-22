@@ -18,7 +18,10 @@ for that one topic and return. You never fan out further.
 ## What to do
 
 1. Search across `@brave-search`, `@tavily`, and `@exa` for trending GitHub
-   repositories matching the topic. Deduplicate by `owner/name`.
+   repositories matching the topic. Deduplicate by `owner/name`. If any of
+   those MCP providers returns an auth / rate-limit error, fall back to
+   Kiro's built-in `web_search` and `web_fetch` rather than abandoning the
+   topic.
 2. For each candidate repo, note: star count, last-commit date, primary
    language, and a one-sentence description.
 3. Filter to repos that:
