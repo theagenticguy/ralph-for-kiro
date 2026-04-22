@@ -1,0 +1,35 @@
+{
+	"version": "1.0",
+	"topics": [
+		"trending-technology",
+		"ai-agents",
+		"developer-tools",
+		"llm-tooling",
+		"infrastructure",
+		"open-source-launches",
+		"surprising-finds"
+	],
+	"languages": ["python", "typescript", "rust", "go"],
+	"watch": [],
+	"thresholds": {
+		"minStars": 25,
+		"autoAddStars": 500,
+		"maxAgeDays": 365
+	},
+	"discoveryLog": [
+		{
+			"taskId": "pw-20260422-0035",
+			"date": "2026-04-22",
+			"itemsSurfaced": 27,
+			"topCategories": ["surprising-finds", "developer-tools", "ai-agents", "llm-tooling"],
+			"topStory": "John Ternus to become Apple CEO (1918 pts)",
+			"keyThemes": [
+				"Supply-chain security post-Vercel breach",
+				"AI agent runtime fragmentation (OpenClaw reversal, Claude routines)",
+				"1-bit/ternary model quantization for edge",
+				"Jujutsu VCS gaining mindshare",
+				"EU replaceable battery mandate"
+			]
+		}
+	]
+}
