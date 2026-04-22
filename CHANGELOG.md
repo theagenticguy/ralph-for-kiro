@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/theagenticguy/ralph-for-kiro/compare/v1.1.0...v1.2.0) (2026-04-22)
+
+
+### Features
+
+* **paths:** --user-dir / RALPH_USER_DIR + scout init --from-example ([#51](https://github.com/theagenticguy/ralph-for-kiro/issues/51)) ([23c283e](https://github.com/theagenticguy/ralph-for-kiro/commit/23c283e769fad35e9af0de6d7bf600117f61b61f))
+* **scouts:** AX polish, Haiku probe, scouts as user data ([#49](https://github.com/theagenticguy/ralph-for-kiro/issues/49)) ([e81a218](https://github.com/theagenticguy/ralph-for-kiro/commit/e81a2183c5d475f7a588850790f68afdb261f2af))
+* **scouts:** isolated scout fleet with hooks, intra-scout subagents, knowledge index, and fleet ops ([#46](https://github.com/theagenticguy/ralph-for-kiro/issues/46)) ([b7475f0](https://github.com/theagenticguy/ralph-for-kiro/commit/b7475f0512a0033bb54391b50c3f59c4c37f2c3e))
+
+
+### Bug Fixes
+
+* **scouts:** add web_search/web_fetch fallback when MCPs fail ([#53](https://github.com/theagenticguy/ralph-for-kiro/issues/53)) ([e391f86](https://github.com/theagenticguy/ralph-for-kiro/commit/e391f86eefc53b020e26a9e3b0f2d837c464dd72))
+* **scouts:** three blockers surfaced by first live sparring ([#48](https://github.com/theagenticguy/ralph-for-kiro/issues/48)) ([5140e14](https://github.com/theagenticguy/ralph-for-kiro/commit/5140e1460d4febadfb86de12def0c78b2d5513ed))
+
 ## [1.1.0](https://github.com/theagenticguy/ralph-for-kiro/compare/v1.0.0...v1.1.0) (2026-04-21)
 
 
