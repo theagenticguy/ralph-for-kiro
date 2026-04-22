@@ -11,11 +11,12 @@
  * @module core/scout-init
  */
 import { mkdir } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import probeTopicConfig from "../data/probe-topic.json";
 import probeTopicSteering from "../data/probe-topic.md" with { type: "text" };
 import agentConfig from "../data/project-watcher.json";
 import steeringContent from "../data/watcher-context.md" with { type: "text" };
+import { KIRO_SETTINGS_DIR } from "../utils/paths";
 import { installHookScripts } from "./hook-installer";
 
 /**
@@ -97,6 +98,18 @@ export async function ensureScoutKiroTree(scoutDir: string): Promise<string> {
 	// Hooks — same scripts as repo-root, just re-stamped under the scout's
 	// tree so Kiro finds them via cwd resolution.
 	await installHookScripts(join(kiroDir, "hooks"));
+
+	// MCP settings — Kiro looks for `.kiro/settings/mcp.json` relative to
+	// cwd. Without this, scouts lose @brave-search / @tavily / @exa. Copy
+	// the repo-root MCP config into each scout so every scout inherits the
+	// same search stack. We copy content instead of symlinking so the
+	// per-scout tree stays self-contained (portable, cleanly deletable).
+	const repoMcp = resolve(process.cwd(), KIRO_SETTINGS_DIR, "mcp.json");
+	const scoutMcp = join(kiroDir, "settings", "mcp.json");
+	const repoMcpFile = Bun.file(repoMcp);
+	if (await repoMcpFile.exists()) {
+		await Bun.write(scoutMcp, await repoMcpFile.text());
+	}
 
 	return kiroDir;
 }

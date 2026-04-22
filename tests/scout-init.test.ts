@@ -3,6 +3,7 @@ import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureScoutKiroTree } from "../src/core/scout-init.ts";
+import { KIRO_SETTINGS_DIR } from "../src/utils/paths.ts";
 
 describe("ensureScoutKiroTree", () => {
 	test("stamps a complete .kiro/ tree under a scout directory", async () => {
@@ -25,11 +26,6 @@ describe("ensureScoutKiroTree", () => {
 			).json();
 			expect(agent.name).toBe("project-watcher");
 			expect(agent.hooks).toBeDefined();
-			// Subagent whitelist present so probe-topic can be spawned via
-			// use_subagent but nothing else can.
-			expect(agent.availableAgents).toEqual(["probe-*"]);
-			expect(agent.trustedAgents).toEqual(["probe-topic"]);
-
 			// Resources rewritten for scout cwd; includes the scoped
 			// knowledge-base index over this scout's own history.
 			expect(agent.resources).toContain("file://manifest.json");
@@ -86,6 +82,68 @@ describe("ensureScoutKiroTree", () => {
 			expect(after).toBe("CUSTOMIZED\n");
 		} finally {
 			await rm(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	test("does NOT emit unsupported availableAgents/trustedAgents fields", async () => {
+		// Kiro CLI 2.0.1's agent-config schema does not include these fields.
+		// Emitting them makes kiro-cli reject the whole config at agent-load.
+		// Guard against a future reintroduction.
+		const tempDir = await mkdtemp(join(tmpdir(), "ralph-scout-"));
+		try {
+			const scoutDir = join(tempDir, "my-scout");
+			const kiroDir = await ensureScoutKiroTree(scoutDir);
+			const agent = await Bun.file(
+				join(kiroDir, "agents", "project-watcher.json"),
+			).json();
+			expect(agent.availableAgents).toBeUndefined();
+			expect(agent.trustedAgents).toBeUndefined();
+		} finally {
+			await rm(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	test("copies the repo-root mcp.json into the scout's settings/", async () => {
+		// Scouts spawn kiro-cli with cwd=scouts/<name>/, and Kiro reads
+		// `.kiro/settings/mcp.json` relative to cwd. Without the copy the
+		// scout loses @brave-search / @tavily / @exa. We write a temp
+		// repo-root mcp.json, run ensureScoutKiroTree with cwd pointed at
+		// that temp root, and assert the content lands in the scout tree.
+		const tempRepo = await mkdtemp(join(tmpdir(), "ralph-repo-"));
+		const originalCwd = process.cwd();
+		try {
+			const repoSettings = join(tempRepo, KIRO_SETTINGS_DIR);
+			// Bun.write creates parent dirs as needed.
+			const sentinelMcp = '{ "mcpServers": { "x": { "command": "y" } } }';
+			await Bun.write(join(repoSettings, "mcp.json"), sentinelMcp);
+
+			process.chdir(tempRepo);
+			const scoutDir = join(tempRepo, "scouts", "mcp-test");
+			const kiroDir = await ensureScoutKiroTree(scoutDir);
+
+			const copied = await Bun.file(
+				join(kiroDir, "settings", "mcp.json"),
+			).text();
+			expect(copied).toBe(sentinelMcp);
+		} finally {
+			process.chdir(originalCwd);
+			await rm(tempRepo, { recursive: true, force: true });
+		}
+	});
+
+	test("gracefully skips MCP copy when repo has no mcp.json", async () => {
+		const tempRepo = await mkdtemp(join(tmpdir(), "ralph-repo-"));
+		const originalCwd = process.cwd();
+		try {
+			process.chdir(tempRepo);
+			const scoutDir = join(tempRepo, "scouts", "no-mcp");
+			const kiroDir = await ensureScoutKiroTree(scoutDir);
+			// No throw; settings/ dir still exists but without mcp.json
+			const mcpFile = Bun.file(join(kiroDir, "settings", "mcp.json"));
+			expect(await mcpFile.exists()).toBe(false);
+		} finally {
+			process.chdir(originalCwd);
+			await rm(tempRepo, { recursive: true, force: true });
 		}
 	});
 });
