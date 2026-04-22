@@ -1,0 +1,20 @@
+{
+	"version": "1.0",
+	"topics": [
+		"trending-technology",
+		"ai-agents",
+		"developer-tools",
+		"llm-tooling",
+		"infrastructure",
+		"open-source-launches",
+		"surprising-finds"
+	],
+	"languages": ["python", "typescript", "rust", "go"],
+	"watch": [],
+	"thresholds": {
+		"minStars": 25,
+		"autoAddStars": 500,
+		"maxAgeDays": 365
+	},
+	"discoveryLog": []
+}

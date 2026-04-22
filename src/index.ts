@@ -27,7 +27,25 @@ import { VERSION } from "./version";
 const program = new Command()
 	.name("ralph")
 	.description("Ralph Wiggum iterative loop technique for Kiro CLI")
-	.version(VERSION);
+	.version(VERSION)
+	.addHelpText(
+		"after",
+		`
+Common tasks:
+  ralph watch init && ralph watch      Kick off a one-off discovery loop
+  ralph scout ls                       List configured scouts
+  ralph scout --concurrency 3          Run the full fleet in parallel
+  ralph scout tail ai-eval             Follow a live scout run
+  ralph loop "Build a CLI" -m 20       Run Ralph iteratively on a task
+
+Data:
+  scouts/<name>/                       Per-scout manifest + .kiro/ tree
+  results/<scout>/pw-YYYYMMDD-HHmm/    Per-run artefacts (iterations/,
+                                       summary.md, discovery.json,
+                                       status.json)
+
+See 'ralph <cmd> --help' for any subcommand.`,
+	);
 
 // Init command
 program
@@ -97,7 +115,17 @@ const watchCmd = program
 	.option("-a, --agent <name>", "Agent name override")
 	.option("--manifest <path>", "Path to watch manifest file")
 	.option("--scout <name>", "Scout name (namespaces results)")
-	.action(watchRunCommand);
+	.action(watchRunCommand)
+	.addHelpText(
+		"after",
+		`
+Examples:
+  ralph watch init                       Scaffold .kiro/ + watch-manifest.json
+  ralph watch                            Run one discovery loop from the root manifest
+  ralph watch -n 2 -m 5                  Shorter loop (2-5 iterations)
+  ralph watch ls                         List recent watch runs
+  ralph watch results                    Show most recent watch run`,
+	);
 
 watchCmd
 	.command("init")
@@ -116,10 +144,44 @@ watchCmd
 	.description("List recent watch runs")
 	.action(watchLsCommand);
 
-// Scout command (fleet of focused watchers)
+// Scout command (fleet of focused watchers).
+// The parent action runs scouts; `run` is also registered below as an
+// explicit alias so `ralph scout run --name X` doesn't silently 404 on
+// the commander argument parser (it used to error with "too many
+// arguments for 'scout'" — a real AX cliff we hit during sparring).
 const scoutCmd = program
 	.command("scout")
 	.description("Manage a fleet of focused discovery scouts")
+	.option("-n, --min-iterations <number>", "Minimum iterations per scout", "3")
+	.option("-m, --max-iterations <number>", "Maximum iterations per scout", "10")
+	.option("--name <name>", "Run a specific scout only")
+	.option("-a, --agent <name>", "Agent name override")
+	.option(
+		"-c, --concurrency <number>",
+		"Max scouts to run in parallel (default 1 = sequential)",
+		"1",
+	)
+	.action(scoutRunCommand)
+	.addHelpText(
+		"after",
+		`
+Examples:
+  ralph scout ls                         List every scout on disk
+  ralph scout                            Run every scout sequentially
+  ralph scout --name ai-eval             Run just one scout
+  ralph scout run --name ai-eval         Same — 'run' is an explicit alias
+  ralph scout --concurrency 3            Fleet in parallel, 3 workers
+  ralph scout tail ai-eval               Stream in-flight iteration sidecars
+  ralph scout status                     One-line summary of each scout's last run
+  ralph scout init hn-frontpage \\
+    -t "ai-agents,llm-tooling"          Scaffold a new scout`,
+	);
+
+// Explicit `run` alias so `ralph scout run [flags]` works as expected.
+// Forwards to the parent action with the merged option set.
+scoutCmd
+	.command("run")
+	.description("Alias for `ralph scout [options]` — runs the fleet")
 	.option("-n, --min-iterations <number>", "Minimum iterations per scout", "3")
 	.option("-m, --max-iterations <number>", "Maximum iterations per scout", "10")
 	.option("--name <name>", "Run a specific scout only")
