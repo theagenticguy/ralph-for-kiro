@@ -22,12 +22,23 @@ import {
 	watchResultsCommand,
 	watchRunCommand,
 } from "./commands";
+import { setUserDir } from "./utils/paths";
 import { VERSION } from "./version";
 
 const program = new Command()
 	.name("ralph")
 	.description("Ralph Wiggum iterative loop technique for Kiro CLI")
 	.version(VERSION)
+	.option(
+		"--user-dir <path>",
+		"Directory where scouts/ and results/ live (overrides $RALPH_USER_DIR and $XDG_CONFIG_HOME/ralph-for-kiro; falls back to cwd)",
+	)
+	.hook("preSubcommand", (thisCommand) => {
+		// Resolve --user-dir once before any subcommand runs so every path
+		// helper in src/utils/paths.ts reads a stable value.
+		const opts = thisCommand.opts();
+		setUserDir((opts["userDir"] as string | undefined) ?? null);
+	})
 	.addHelpText(
 		"after",
 		`
@@ -38,7 +49,13 @@ Common tasks:
   ralph scout tail ai-eval             Follow a live scout run
   ralph loop "Build a CLI" -m 20       Run Ralph iteratively on a task
 
-Data:
+User directory resolution (where scouts/ and results/ live):
+  --user-dir <path>                    Flag (highest precedence)
+  $RALPH_USER_DIR                      Env var
+  $XDG_CONFIG_HOME/ralph-for-kiro/     XDG default (only if it exists)
+  $(pwd)                               Legacy fallback
+
+Data layout (under the resolved user directory):
   scouts/<name>/                       Per-scout manifest + .kiro/ tree
   results/<scout>/pw-YYYYMMDD-HHmm/    Per-run artefacts (iterations/,
                                        summary.md, discovery.json,
@@ -211,6 +228,10 @@ scoutCmd
 	.option("-t, --topics <topics>", "Comma-separated topics")
 	.option("-l, --languages <langs>", "Comma-separated languages")
 	.option("-f, --force", "Overwrite existing scout")
+	.option(
+		"--from-example <template>",
+		"Scaffold from a built-in template (e.g. 'hn-frontpage'). Copies manifest + steering",
+	)
 	.action(scoutInitCommand);
 
 scoutCmd

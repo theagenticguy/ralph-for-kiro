@@ -2,8 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { scoutInitCommand } from "../src/commands/scout.ts";
 import { ensureScoutKiroTree } from "../src/core/scout-init.ts";
-import { KIRO_SETTINGS_DIR } from "../src/utils/paths.ts";
+import {
+	KIRO_SETTINGS_DIR,
+	scoutsDir,
+	setUserDir,
+} from "../src/utils/paths.ts";
 
 describe("ensureScoutKiroTree", () => {
 	test("stamps a complete .kiro/ tree under a scout directory", async () => {
@@ -143,6 +148,47 @@ describe("ensureScoutKiroTree", () => {
 			expect(await mcpFile.exists()).toBe(false);
 		} finally {
 			process.chdir(originalCwd);
+			await rm(tempRepo, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("scoutInitCommand --from-example", () => {
+	test("hn-frontpage template writes manifest + steering into the scout", async () => {
+		const tempRepo = await mkdtemp(join(tmpdir(), "ralph-example-"));
+		try {
+			// Point the user-dir at the tempdir so scoutsDir() lands there.
+			setUserDir(tempRepo);
+			await scoutInitCommand("my-hn", { fromExample: "hn-frontpage" });
+
+			const scoutDir = join(scoutsDir(), "my-hn");
+			const manifest = await Bun.file(join(scoutDir, "manifest.json")).json();
+			expect(manifest.topics).toContain("trending-technology");
+			expect(manifest.discoveryLog).toEqual([]);
+
+			const steering = await Bun.file(
+				join(scoutDir, ".kiro", "steering", "watcher-context.md"),
+			).text();
+			expect(steering).toContain("HN Frontpage Scout");
+			expect(steering).toContain("hnrss.github.io");
+		} finally {
+			setUserDir(null);
+			await rm(tempRepo, { recursive: true, force: true });
+		}
+	});
+
+	test("rejects unknown template names", async () => {
+		const tempRepo = await mkdtemp(join(tmpdir(), "ralph-example-"));
+		try {
+			setUserDir(tempRepo);
+			await scoutInitCommand("my-unknown", { fromExample: "nonexistent" });
+			// No manifest should have been written.
+			const manifest = Bun.file(
+				join(scoutsDir(), "my-unknown", "manifest.json"),
+			);
+			expect(await manifest.exists()).toBe(false);
+		} finally {
+			setUserDir(null);
 			await rm(tempRepo, { recursive: true, force: true });
 		}
 	});

@@ -17,20 +17,28 @@ committed to the ralph-for-kiro repo. Think of it the same way you think of
    rewrites each scout's `.kiro/{agents,steering,hooks,settings}` on
    every run, so any committed copy goes stale immediately.
 
+## Where does `scouts/` live?
+
+By default, `scouts/` sits alongside the ralph-for-kiro checkout. That works
+for a single-machine setup but means scout data is coupled to the repo clone.
+Override with either:
+
+- `--user-dir <path>` CLI flag (e.g. `ralph --user-dir ~/ralph-data scout ls`)
+- `RALPH_USER_DIR=<path>` env var (useful in cron entries)
+- `$XDG_CONFIG_HOME/ralph-for-kiro/` (auto-detected if the directory exists)
+
+Resolution order is flag → env → XDG → cwd. The cwd fallback keeps existing
+setups working without change.
+
 ## Making a new scout
 
 Two ways:
 
-**From an example template** (recommended for feed-shaped scouts):
+**From a built-in template** (recommended for feed-shaped scouts):
 ```bash
-# Coming in the follow-up PR per GH issue #TBD —
-# `ralph scout init --from-example hn-frontpage`
-cp src/data/examples/hn-frontpage-manifest.json \
-   scouts/my-hn-scout/manifest.json
-mkdir -p scouts/my-hn-scout/.kiro/steering
-cp src/data/examples/hn-frontpage-steering.md \
-   scouts/my-hn-scout/.kiro/steering/watcher-context.md
+ralph scout init --from-example hn-frontpage my-hn-scout
 ```
+Available templates: `hn-frontpage`.
 
 **From scratch** (repo-watch scouts like ai-eval):
 ```bash
@@ -50,8 +58,19 @@ ralph scout tail my-scout             # watch an in-flight run
 
 Output lands in `results/<scout-name>/pw-YYYYMMDD-HHmm/` (also gitignored).
 
-## Heads-up on the 4am-CST cron
+## Running nightly via cron
 
 If you set up a nightly cron, it will fail silently if `scouts/` is empty.
-Either seed from an example or have `ralph scout init` run once before the
-first cron invocation.
+Either seed a scout from a template or run `ralph scout init` once before
+the first cron invocation. Pin the user dir explicitly in the crontab entry
+if you want scouts to live outside the repo:
+
+```cron
+0 9 * * * RALPH_USER_DIR=$HOME/ralph-data /path/to/ralph-for-kiro \
+  scout --concurrency 3 --min-iterations 2 --max-iterations 4 \
+  >> $HOME/ralph-data/cron.log 2>&1
+```
+
+Remember that crontab times are in the host's local timezone — if your
+devbox runs UTC and you want a local-CST time, convert accordingly (and
+remember DST will shift the run by an hour twice a year).
